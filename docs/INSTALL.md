@@ -33,10 +33,6 @@ der Zugang wird automatisch erneuert. Über **„Abmelden"** wird die Sitzung se
 > Voraussetzung: Der Betreiber muss ggf. die Redirect-URI der Erweiterung hinterlegen
 > (Backend → Administration → **Vault-Erweiterung**). `*.chromiumapp.org` ist standardmäßig erlaubt.
 
-> **Erweitert – manueller Token:** In den Erweiterungs-Einstellungen gibt es unter „Erweitert" weiterhin
-> ein Feld für einen manuellen API-Token (z. B. für Kiosk-/Headless-Szenarien). OpenNIT bietet im Frontend
-> jedoch **keine** Token-Erzeugung mehr an – der Standardweg ist SSO.
-
 ## 3. Erweiterung konfigurieren
 
 1. Auf das OpenNIT-Vault-Symbol klicken → Zahnrad **Einstellungen** (oder `chrome://extensions` →
@@ -63,7 +59,7 @@ der Zugang wird automatisch erneuert. Über **„Abmelden"** wird die Sitzung se
 
 | Problem | Ursache / Lösung |
 |--------|------------------|
-| „Nicht verbunden" | Server-URL/Token prüfen; endet die URL ohne `/`? Ist die Instanz erreichbar (HTTPS/Zertifikat)? |
+| „Nicht verbunden" | Server-URL prüfen (endet ohne `/`?); ggf. über **„Mit OpenNIT anmelden"** neu verbinden. Ist die Instanz erreichbar (HTTPS/Zertifikat)? |
 | Keine Vorschläge auf einer Seite | Ist der Tresor per PIN gesperrt? Passt eine hinterlegte URL zur Domain? Seite neu laden. |
 | „Seite nicht bereit" beim Ausfüllen | Seite einmal neu laden, damit das Content-Script aktiv ist. |
 | Favicons fehlen | Werden serverseitig per Cron nachgeladen; erscheinen nach dem ersten Durchlauf. |
