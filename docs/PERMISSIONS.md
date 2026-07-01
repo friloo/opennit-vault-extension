@@ -27,7 +27,7 @@ React/Vue/Angular-Formulare die Eingaben übernehmen.
 
 ## `storage`
 
-**Warum:** Lokale Speicherung von Server-URL, API-Token und Einstellungen; Entsperr-Status in
+**Warum:** Lokale Speicherung von Server-URL, Zugriffstoken (per SSO) und Einstellungen; Entsperr-Status in
 `storage.session`.
 
 ## `alarms`
