@@ -20,8 +20,8 @@ Sobald veröffentlicht: im Store nach **„OpenNIT Vault"** suchen und **„Hinz
 
 ### C) Fertiges ZIP aus dem OpenNIT-Backend
 
-Im OpenNIT-Web-Tresor gibt es unter **„Extension"** einen ZIP-Download mit bereits vorausgefüllter
-Server-URL. Diesen entpacken und wie unter **A)** laden.
+Im OpenNIT-Backend gibt es unter **Administration → Vault-Erweiterung** (`/admin/vault/extension`) einen
+ZIP-Download mit bereits vorausgefüllter Server-URL. Diesen entpacken und wie unter **A)** laden.
 
 ## 2. Anmelden
 
@@ -33,24 +33,17 @@ der Zugang wird automatisch erneuert. Über **„Abmelden"** wird die Sitzung se
 > Voraussetzung: Der Betreiber muss ggf. die Redirect-URI der Erweiterung hinterlegen
 > (Backend → Administration → **Vault-Erweiterung**). `*.chromiumapp.org` ist standardmäßig erlaubt.
 
-**Alternative – manueller Token** (Kiosk/Headless ohne interaktiven Login): siehe Abschnitt „Erweitert"
-in den Einstellungen und die folgenden Schritte.
-
-## 2b. Manuellen Token erzeugen
-
-1. In OpenNIT den **Passwort-Tresor** öffnen.
-2. Auf **„Extension"** klicken und einen **API-Token** generieren.
-3. Der Token wird **nur einmal** angezeigt – kopieren.
-
-> Der Token verschlüsselt serverseitig deinen Vault-Schlüssel. Behandle ihn wie ein Passwort.
+> **Erweitert – manueller Token:** In den Erweiterungs-Einstellungen gibt es unter „Erweitert" weiterhin
+> ein Feld für einen manuellen API-Token (z. B. für Kiosk-/Headless-Szenarien). OpenNIT bietet im Frontend
+> jedoch **keine** Token-Erzeugung mehr an – der Standardweg ist SSO.
 
 ## 3. Erweiterung konfigurieren
 
 1. Auf das OpenNIT-Vault-Symbol klicken → Zahnrad **Einstellungen** (oder `chrome://extensions` →
    Details → Erweiterungsoptionen).
 2. **Server-URL** eintragen (z. B. `https://vault.firma.de`, ohne `/` am Ende).
-3. **API-Token** einfügen → **Speichern**.
-4. **Verbindung testen** – es sollte „Verbunden als …" erscheinen.
+3. **„Mit OpenNIT anmelden"** klicken und die Anmeldung bestätigen.
+4. Danach zeigt die Erweiterung „Verbunden als …" an.
 
 ## 4. Optional: PIN-Sperre
 
