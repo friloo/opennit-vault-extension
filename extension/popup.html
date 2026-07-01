@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+    --bg:#f6f7fb; --card:#ffffff; --ink:#1f2330; --muted:#79839a;
+    --line:#edeff4; --brand:#4f46e5; --brand2:#3c8dbc; --ok:#16a34a; --danger:#dc2626;
+    --radius:12px;
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg:#15171f; --card:#1e212b; --ink:#e7e9f0; --muted:#9aa2b5;
+        --line:#2b2f3b; --brand:#6366f1; --brand2:#3c8dbc; --ok:#22c55e; --danger:#f87171;
+    }
+    .entry-icon, .detail-icon { background:#262a36; }
+    .ico-btn, .field-btn, .ne-icon-btn { background:#262a36; color:#c4c9d6; }
+    .search-input, .panel-input, .lock-input { background:#262a36; color:var(--ink); }
+    .totp-display, .totp-code { color:#fff; }
+    .team-badge { background:#312e54; color:#c7c2f5; }
+}
+body {
+    width: 360px;
+    font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size: 13px; color: var(--ink); background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.hd {
+    background: linear-gradient(135deg,#4f46e5 0%,#5b6ee8 45%,#3c8dbc 100%);
+    color: #fff; padding: 13px 14px; display: flex; align-items: center; gap: 11px;
+}
+.hd-icon { width: 30px; height: 30px; border-radius: 9px; background: rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
+.hd-icon img { width: 22px; height: 22px; object-fit: contain; }
+.hd-main { flex: 1; min-width: 0; }
+.hd-title { font-weight: 700; font-size: 13.5px; letter-spacing: .01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hd-user  { font-size: 10.5px; color: rgba(255,255,255,.78); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.hd-dot { width: 8px; height: 8px; border-radius: 50%; background: #34d399; box-shadow: 0 0 0 3px rgba(52,211,153,.25); flex-shrink: 0; }
+
+/* ── Search ─────────────────────────────────────────────── */
+.search-wrap { padding: 10px 12px 8px; background: var(--bg); }
+.search-input {
+    width: 100%; padding: 9px 12px 9px 34px;
+    border: 1.5px solid var(--line); border-radius: 10px; font-size: 12.5px; outline: none;
+    background: var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%2379839a' stroke-width='2.2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") 12px center/13px no-repeat;
+    transition: border-color .15s, box-shadow .15s;
+}
+.search-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(79,70,229,.14); }
+
+/* ── Section labels ─────────────────────────────────────── */
+.section-lbl {
+    padding: 6px 14px 4px; font-size: 10px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .07em;
+}
+.section-lbl.match { color: var(--brand); }
+
+/* ── Entries ────────────────────────────────────────────── */
+.entries { padding: 0 8px 4px; overflow-y: auto; }
+.entries.scrollable { max-height: 256px; }
+.entry {
+    padding: 9px 10px; margin: 3px 0; border-radius: 10px;
+    display: flex; align-items: center; gap: 11px; cursor: pointer; background: var(--card);
+    border: 1.5px solid transparent; transition: border-color .12s, box-shadow .12s, transform .04s;
+}
+.entry:hover { border-color: #e3e6ef; box-shadow: 0 4px 14px rgba(31,35,48,.07); }
+.entry:active { transform: scale(.995); }
+.entry.kbd-sel { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(79,70,229,.16); }
+.entry-2fa { font-size: 8.5px; font-weight: 700; color: #0369a1; background: #e0f2fe; border-radius: 4px; padding: 1px 4px; margin-left: 6px; vertical-align: middle; letter-spacing: .03em; }
+.entry-chev { color: #c2c8d6; flex-shrink: 0; }
+.entry:hover .entry-chev, .entry.kbd-sel .entry-chev { color: var(--brand); }
+.entry-icon {
+    width: 32px; height: 32px; border-radius: 9px; background: #eef0f7;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; flex-shrink: 0; overflow: hidden;
+}
+.entry-icon img { width: 20px; height: 20px; object-fit: contain; }
+.entry-info { flex: 1; min-width: 0; }
+.entry-title { font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12.5px; }
+.entry-user  { color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.entry-meta  { display: flex; gap: 5px; align-items: center; margin-top: 2px; }
+.entry-url   { color: #aab2c3; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+.entry-actions { display: flex; gap: 4px; opacity: 0; transition: opacity .12s; flex-shrink: 0; }
+.entry:hover .entry-actions { opacity: 1; }
+.ico-btn { background: #f3f4f8; border: none; border-radius: 8px; width: 26px; height: 26px; cursor: pointer; font-size: 11px; color: #5b6478; display: inline-flex; align-items: center; justify-content: center; transition: background .12s, color .12s; }
+.ico-btn:hover { background: var(--brand); color: #fff; }
+.team-badge { font-size: 9px; background: #ede9fe; color: #6d28d9; border-radius: 5px; padding: 1.5px 6px; white-space: nowrap; flex-shrink: 0; font-weight: 700; }
+.totp-btn { background: #e0f2fe; color: #0369a1; font-weight: 700; width: auto; padding: 0 8px; }
+.totp-btn:hover { background: var(--brand2); color: #fff; }
+.totp-row { display: none; padding: 6px 12px 8px 52px; }
+.totp-display { display: flex; align-items: center; gap: 9px; background: #0f172a; border-radius: 10px; padding: 8px 11px; }
+.totp-code { font-family: ui-monospace,SFMono-Regular,Menlo,monospace; font-size: 16px; font-weight: 700; letter-spacing: .14em; color: #fff; }
+.totp-bar-wrap { flex: 1; height: 4px; background: rgba(255,255,255,.18); border-radius: 3px; overflow: hidden; }
+.totp-bar-fill { height: 100%; background: #34d399; border-radius: 3px; transition: width 1s linear; }
+.totp-secs { font-size: 10px; color: #94a3b8; white-space: nowrap; min-width: 22px; text-align: right; }
+.totp-hint { font-size: 10px; color: var(--ok); margin-top: 4px; }
+
+/* ── States ─────────────────────────────────────────────── */
+.empty { padding: 30px 22px; text-align: center; color: var(--muted); line-height: 1.7; font-size: 12px; }
+.empty-emoji { font-size: 30px; display: block; margin-bottom: 8px; opacity: .7; }
+.error { padding: 14px; text-align: center; color: var(--danger); font-size: 11px; line-height: 1.6; }
+
+/* ── New Entry Panel ────────────────────────────────────── */
+#newEntryPanel { display: none; background: var(--card); }
+.panel-hd { background: linear-gradient(135deg,#4f46e5,#3c8dbc); color: #fff; padding: 11px 14px; display: flex; align-items: center; }
+.panel-hd-title { flex: 1; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.panel-close { background: none; border: none; color: rgba(255,255,255,.8); font-size: 17px; cursor: pointer; padding: 0 2px; line-height: 1; }
+.panel-close:hover { color: #fff; }
+.panel-body { padding: 14px; display: flex; flex-direction: column; gap: 9px; }
+.panel-input { width: 100%; padding: 9px 11px; border: 1.5px solid var(--line); border-radius: 9px; font-size: 12.5px; outline: none; font-family: inherit; transition: border-color .15s, box-shadow .15s; }
+.panel-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(79,70,229,.14); }
+.panel-save { background: var(--brand); color: #fff; border: none; border-radius: 9px; padding: 10px 14px; font-size: 12.5px; font-weight: 700; cursor: pointer; width: 100%; transition: background .12s; }
+.panel-save:hover { background: #4338ca; }
+.panel-save:disabled { background: #aeb4c4; cursor: default; }
+.panel-msg { font-size: 11px; color: var(--danger); min-height: 14px; }
+
+/* ── Detail Panel ───────────────────────────────────────── */
+#detailPanel { display: none; background: var(--bg); }
+.panel-back { background: none; border: none; color: rgba(255,255,255,.85); cursor: pointer; padding: 0 6px 0 0; display: flex; align-items: center; line-height: 1; }
+.panel-back:hover { color: #fff; }
+.detail-body { padding: 14px; }
+.detail-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.detail-icon { width: 44px; height: 44px; border-radius: 12px; background: #eef0f7; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; flex-shrink: 0; overflow: hidden; }
+.detail-icon img { width: 28px; height: 28px; object-fit: contain; }
+.detail-headinfo { min-width: 0; flex: 1; }
+.detail-name { font-weight: 700; font-size: 15px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.detail-url-link { color: var(--brand); font-size: 11px; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.detail-url-link:hover { text-decoration: underline; }
+.field { background: var(--card); border: 1.5px solid var(--line); border-radius: 11px; padding: 8px 11px; margin-bottom: 9px; }
+.field-lbl { font-size: 9.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 3px; }
+.field-row { display: flex; align-items: center; gap: 6px; }
+.field-val { flex: 1; min-width: 0; font-size: 13px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.field-val.mono { font-family: ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing: .02em; }
+.field-val.empty { color: #aab2c3; font-style: italic; }
+.field-btn { background: #f3f4f8; border: none; border-radius: 8px; width: 30px; height: 30px; flex-shrink: 0; cursor: pointer; color: #5b6478; display: inline-flex; align-items: center; justify-content: center; transition: background .12s, color .12s; }
+.field-btn:hover { background: var(--brand); color: #fff; }
+.field-totp-code { font-family: ui-monospace,SFMono-Regular,Menlo,monospace; font-size: 16px; font-weight: 700; letter-spacing: .12em; color: var(--ink); }
+.field-totp-secs { font-size: 10px; color: var(--muted); min-width: 24px; text-align: right; }
+.detail-fill { margin-top: 4px; width: 100%; padding: 11px; background: var(--brand); color: #fff; border: none; border-radius: 11px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; transition: background .12s; }
+.detail-fill:hover { background: #4338ca; }
+.detail-fill:disabled { background: #aeb4c4; cursor: default; }
+
+/* ── New-Entry: Passwort-Zeile + Generator ──────────────── */
+.ne-pass-row { display: flex; gap: 6px; align-items: center; }
+.ne-pass-row .panel-input { flex: 1; }
+.ne-icon-btn { flex-shrink: 0; width: 36px; height: 36px; border: 1.5px solid var(--line); background: var(--card); border-radius: 9px; cursor: pointer; color: #5b6478; display: inline-flex; align-items: center; justify-content: center; transition: background .12s, color .12s, border-color .12s; }
+.ne-icon-btn:hover { background: var(--brand); border-color: var(--brand); color: #fff; }
+.field-notes { font-size: 12px; color: var(--ink); white-space: pre-wrap; word-break: break-word; max-height: 90px; overflow-y: auto; margin-top: 2px; }
+
+/* ── Lock Screen ────────────────────────────────────────── */
+#lockScreen { display: none; background: var(--bg); }
+.lock-body { padding: 34px 24px 30px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.lock-icon { width: 64px; height: 64px; border-radius: 18px; background: linear-gradient(135deg,#4f46e5,#3c8dbc); color: #fff; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; box-shadow: 0 8px 22px rgba(79,70,229,.3); }
+.lock-title { font-size: 16px; font-weight: 700; color: var(--ink); }
+.lock-sub { font-size: 12px; color: var(--muted); margin: 4px 0 18px; }
+.lock-input { width: 100%; padding: 11px 13px; border: 1.5px solid var(--line); border-radius: 10px; font-size: 16px; text-align: center; letter-spacing: .25em; outline: none; background: var(--card); color: var(--ink); transition: border-color .15s, box-shadow .15s; }
+.lock-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(79,70,229,.14); }
+.lock-btn { width: 100%; margin-top: 11px; padding: 11px; background: var(--brand); color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background .12s; }
+.lock-btn:hover { background: #4338ca; }
+.lock-btn:disabled { background: #aeb4c4; cursor: default; }
+.lock-msg { font-size: 11.5px; color: var(--danger); min-height: 15px; margin-top: 9px; }
+
+/* ── Footer ─────────────────────────────────────────────── */
+.ft { padding: 9px 12px; border-top: 1px solid var(--line); background: var(--card); display: flex; gap: 7px; }
+.ft-btn {
+    flex: 1; padding: 9px 0; background: var(--bg); border: 1.5px solid var(--line); border-radius: 10px;
+    cursor: pointer; color: #5b6478; text-decoration: none;
+    display: flex; align-items: center; justify-content: center; transition: all .12s;
+}
+.ft-btn:hover { background: var(--brand); border-color: var(--brand); color: #fff; transform: translateY(-1px); }
+.ft-btn svg { display: block; }
+
+/* ── Toast ──────────────────────────────────────────────── */
+.toast { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); background: #0f172a; color: #fff; padding: 8px 16px; border-radius: 9px; font-size: 11.5px; opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap; box-shadow: 0 6px 20px rgba(0,0,0,.25); }
+.toast.show { opacity: 1; }
+
+/* ── Spinner ────────────────────────────────────────────── */
+.spin { display: inline-block; width: 18px; height: 18px; border: 2.5px solid var(--line); border-top-color: var(--brand); border-radius: 50%; animation: sp .7s linear infinite; margin: auto; }
+@keyframes sp { to { transform: rotate(360deg); } }
+.loading { padding: 30px; display: flex; justify-content: center; }
+</style>
+</head>
+<body>
+<!-- Header -->
+<div class="hd">
+    <div class="hd-icon"><img src="icon32.png" alt=""></div>
+    <div class="hd-main">
+        <div class="hd-title" id="hdTitle">OpenNIT Vault</div>
+        <div class="hd-user"  id="hdUser"></div>
+    </div>
+    <div class="hd-dot" title="Verbunden"></div>
+</div>
+
+<!-- Search -->
+<div class="search-wrap">
+    <input class="search-input" id="search" type="text" placeholder="Einträge suchen…" autocomplete="off">
+</div>
+
+<!-- Entry list (JS-controlled) -->
+<div id="listWrap"><div class="loading"><div class="spin"></div></div></div>
+
+<!-- New Entry Panel (initially hidden) -->
+<div id="newEntryPanel">
+    <div class="panel-hd">
+        <span class="panel-hd-title">Neuen Eintrag anlegen</span>
+        <button class="panel-close" id="btnCloseNew" title="Schließen">&#x2715;</button>
+    </div>
+    <div class="panel-body">
+        <input class="panel-input" id="neTitle"    type="text"     placeholder="Titel *" autocomplete="off">
+        <input class="panel-input" id="neUsername" type="text"     placeholder="Benutzername" autocomplete="off">
+        <div class="ne-pass-row">
+            <input class="panel-input" id="nePassword" type="password" placeholder="Passwort" autocomplete="new-password">
+            <button class="ne-icon-btn" id="btnRevealNewPw" type="button" title="Anzeigen/Verbergen">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+            <button class="ne-icon-btn" id="btnGenPw" type="button" title="Sicheres Passwort generieren">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            </button>
+        </div>
+        <input class="panel-input" id="neUrl"      type="url"      placeholder="URL (https://…)" autocomplete="off">
+        <textarea class="panel-input" id="neNotes" placeholder="Notizen" rows="2" style="resize:vertical;font-family:inherit;"></textarea>
+        <button class="panel-save" id="btnSaveNew">Speichern</button>
+        <div class="panel-msg" id="newEntryMsg"></div>
+    </div>
+</div>
+
+<!-- Detail Panel (initially hidden) -->
+<div id="detailPanel">
+    <div class="panel-hd">
+        <button class="panel-back" id="btnDetailBack" title="Zur&uuml;ck">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="panel-hd-title" id="detailHdTitle">Eintrag</span>
+        <button class="panel-close" id="btnDetailClose" title="Schlie&szlig;en">&#x2715;</button>
+    </div>
+    <div class="detail-body">
+        <div class="detail-head">
+            <div class="detail-icon" id="detailIcon"></div>
+            <div class="detail-headinfo">
+                <div class="detail-name" id="detailName"></div>
+                <a class="detail-url-link" id="detailUrlLink" target="_blank" rel="noopener"></a>
+            </div>
+        </div>
+
+        <div class="field" id="fieldUser">
+            <div class="field-lbl">Benutzername</div>
+            <div class="field-row">
+                <span class="field-val" id="detailUser"></span>
+                <button class="field-btn" id="btnRevealUser" title="Anzeigen/Verbergen">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+                <button class="field-btn" id="btnCopyUser" title="Kopieren">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="field" id="fieldPass">
+            <div class="field-lbl">Passwort</div>
+            <div class="field-row">
+                <span class="field-val mono" id="detailPass">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</span>
+                <button class="field-btn" id="btnRevealPass" title="Anzeigen/Verbergen">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+                <button class="field-btn" id="btnCopyPass" title="Kopieren">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="field" id="fieldTotp" style="display:none;">
+            <div class="field-lbl">2FA-Code (TOTP)</div>
+            <div class="field-row">
+                <span class="field-totp-code" id="detailTotp">&mdash;</span>
+                <span class="totp-bar-wrap" style="max-width:90px;"><span class="totp-bar-fill" id="detailTotpBar"></span></span>
+                <span class="field-totp-secs" id="detailTotpSecs"></span>
+                <button class="field-btn" id="btnCopyTotp" title="Kopieren">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="field" id="fieldNotes" style="display:none;">
+            <div class="field-row" style="align-items:flex-start;">
+                <div style="flex:1;min-width:0;">
+                    <div class="field-lbl">Notizen</div>
+                    <div class="field-notes" id="detailNotes"></div>
+                </div>
+                <button class="field-btn" id="btnCopyNotes" title="Kopieren">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <button class="detail-fill" id="btnDetailFill">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            Auf dieser Seite ausf&uuml;llen
+        </button>
+    </div>
+</div>
+
+<!-- Lock Screen (initially hidden) -->
+<div id="lockScreen">
+    <div class="lock-body">
+        <div class="lock-icon">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <div class="lock-title">Tresor gesperrt</div>
+        <div class="lock-sub">Mit deinem Tresor-PIN entsperren</div>
+        <input class="lock-input" id="lockPin" type="password" inputmode="numeric" placeholder="PIN" autocomplete="off">
+        <button class="lock-btn" id="lockSubmit">Entsperren</button>
+        <div class="lock-msg" id="lockMsg"></div>
+    </div>
+</div>
+
+<!-- Footer -->
+<div class="ft">
+    <!-- New Entry -->
+    <button class="ft-btn" id="btnNew" title="Neuen Eintrag anlegen">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+    </button>
+    <!-- Lock now (only shown when a PIN lock is active) -->
+    <button class="ft-btn" id="btnLock" title="Jetzt sperren" style="display:none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    </button>
+    <!-- Settings -->
+    <button class="ft-btn" id="btnOptions" title="Einstellungen">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+    </button>
+    <!-- Open Vault -->
+    <a class="ft-btn" id="btnOpen" target="_blank" title="Vault im Browser öffnen">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+    </a>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="popup.js"></script>
+</body>
+</html>
