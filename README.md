@@ -37,8 +37,8 @@ Die Erweiterung ist ein reiner **Client** zu deiner OpenNIT-Instanz. Sie enthäl
 und **keinen** Remote-Code – alle Skripte sind im Paket enthalten. Kommuniziert wird ausschließlich mit dem
 von dir konfigurierten OpenNIT-Server über dessen REST-API (`/api/vault/extension/...`) per **Bearer-Token**.
 
-- Der Token wird im OpenNIT-Web-Tresor erzeugt (Schaltfläche **„Extension"**) und in den
-  Erweiterungs-Einstellungen hinterlegt.
+- Die Anmeldung erfolgt per **SSO** („Mit OpenNIT anmelden"). Die Erweiterung erhält dabei automatisch
+  ein kurzlebiges, rotierendes Zugriffstoken – ein manuelles Erzeugen von Tokens im Web-Tresor entfällt.
 - Passwörter werden **serverseitig** ver-/entschlüsselt; die Erweiterung fordert das Klartext-Passwort
   eines Eintrags erst **im Moment des Ausfüllens/Kopierens** an – nicht beim Laden der Liste.
 - Es findet **keine** Ende-zu-Ende-Entschlüsselung im Browser statt; die Erweiterung speichert keine
@@ -46,38 +46,41 @@ von dir konfigurierten OpenNIT-Server über dessen REST-API (`/api/vault/extensi
 
 Details: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · Berechtigungen: [`docs/PERMISSIONS.md`](docs/PERMISSIONS.md)
 
-> **SSO (neu ab 2.4.0):** „Mit OpenNIT anmelden" (OAuth 2.0 + PKCE) – Anmeldung wie an OpenNIT
-> (lokal + 2FA / M365 / Keycloak), automatische Token-Erneuerung mit Rotation. Der manuelle Token bleibt
-> als „Erweitert"-Option. Konzept/Details: [`docs/SSO-PLAN.md`](docs/SSO-PLAN.md).
+> **Anmeldung per SSO (Standard):** „Mit OpenNIT anmelden" (OAuth 2.0 + PKCE) – Anmeldung wie an OpenNIT
+> (lokal + 2FA / M365 / Keycloak), automatische Token-Erneuerung mit Rotation. Ein manuell erzeugter Token
+> ist nur noch als „Erweitert"-Fallback in den Erweiterungs-Einstellungen vorgesehen; OpenNIT bietet dafür
+> im Frontend keine Token-Erzeugung mehr an. Konzept/Details: [`docs/SSO-PLAN.md`](docs/SSO-PLAN.md).
 
 ## Installation
+
+### Aus dem Chrome Web Store
+
+Am einfachsten für Endnutzer: den Store-Eintrag öffnen und **„Hinzufügen"** klicken. Anschließend die
+Erweiterung anheften, Einstellungen öffnen, **Server-URL** eintragen und **„Mit OpenNIT anmelden"** (SSO).
+
+> Store-Link folgt, sobald die Veröffentlichung abgeschlossen ist.
 
 ### Aus dem Quellcode (Entwickler / self-hosted)
 
 1. `chrome://extensions` öffnen, **Entwicklermodus** aktivieren.
 2. **„Entpackte Erweiterung laden"** → den Ordner [`extension/`](extension/) auswählen.
-3. Erweiterung anheften, Einstellungen öffnen, **Server-URL** und **API-Token** eintragen.
+3. Erweiterung anheften, Einstellungen öffnen, **Server-URL** eintragen und **„Mit OpenNIT anmelden"** (SSO).
 
 Ausführliche Anleitung: [`docs/INSTALL.md`](docs/INSTALL.md).
 
 ### Aus dem OpenNIT-Backend
 
-Jede OpenNIT-Instanz bietet unter **Passwort-Tresor → „Extension"** einen fertig konfigurierten
-ZIP-Download (mit vorausgefüllter Server-URL und Instanz-Icon). Diese generische Variante hier ist für die
-Veröffentlichung im Chrome Web Store bzw. als eigenständiges Repository gedacht.
-
-### Chrome Web Store
-
-Für die Store-Veröffentlichung `extension/` zu einem ZIP packen (siehe [`build.sh`](build.sh)) und im
-[Developer Dashboard](https://chrome.google.com/webstore/devconsole) hochladen. Checkliste und
-Store-Texte: [`store/`](store/).
+Jede OpenNIT-Instanz bietet im Backend unter **Admin → Vault-Erweiterung** (`/admin/vault/extension`)
+einen ZIP-Download der Erweiterung (mit vorausgefüllter Server-URL) samt Einrichtungsanleitung. Diese
+generische Variante hier ist für die Veröffentlichung im Chrome Web Store bzw. als eigenständiges
+Repository gedacht.
 
 ## Konfiguration
 
 | Einstellung        | Beschreibung |
 |--------------------|--------------|
 | **Server-URL**     | Adresse deiner OpenNIT-Instanz, ohne abschließenden Slash (`https://…`). |
-| **API-Token**      | Im Web-Tresor unter „Extension" erzeugen und einfügen. |
+| **Anmeldung**      | Per **SSO** („Mit OpenNIT anmelden"). Ein manueller API-Token ist nur als „Erweitert"-Fallback vorgesehen. |
 | **PIN-Sperre**     | Aus / 5 Min / 15 Min / 1 Std / bis der Browser geschlossen wird. Nutzt den **Tresor-PIN**. |
 | **Zwischenablage** | Nach 30 s automatisch leeren (Standard: an). |
 
