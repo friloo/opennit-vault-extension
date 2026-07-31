@@ -100,11 +100,13 @@ async function setUnlockedLocal(dur) {
 }
 async function clearUnlocked() {
     await chrome.storage.session.remove('unlock');
+    await chrome.storage.local.remove(['__armedTotp', '__pendingFill']);
     cachedEntries = null; cacheTime = 0; faviconCache.clear();
     try { await apiFetch('/api/vault/extension/lock', { method: 'POST' }); } catch (e) { /* ignore */ }
 }
 async function onServerLocked() {
     await chrome.storage.session.remove('unlock');
+    await chrome.storage.local.remove(['__armedTotp', '__pendingFill']);
     cachedEntries = null; cacheTime = 0;
 }
 async function doUnlock(pin) {
@@ -242,19 +244,22 @@ async function scheduleClipClear(text) {
     pendingClip = text || '';
     chrome.alarms.create('clipClear', { delayInMinutes: 0.5 });
 }
-async function clearClipboard() {
+// Schreibt über das Offscreen-Dokument. Dieser Weg funktioniert auch dann, wenn
+// die Seite selbst keinen Zugriff bekommt – etwa ohne frische Nutzerinteraktion.
+async function writeClipboard(text) {
     try {
         if (!chrome.offscreen) return;
         const has = chrome.offscreen.hasDocument ? await chrome.offscreen.hasDocument() : false;
         if (!has) {
             await chrome.offscreen.createDocument({
                 url: 'offscreen.html', reasons: ['CLIPBOARD'],
-                justification: 'Zwischenablage nach dem Kopieren von Zugangsdaten leeren.',
+                justification: 'Zugangsdaten in die Zwischenablage legen und nach kurzer Zeit wieder entfernen.',
             });
         }
-        await chrome.runtime.sendMessage({ target: 'offscreen', type: 'CLIP_WRITE', text: '' });
+        await chrome.runtime.sendMessage({ target: 'offscreen', type: 'CLIP_WRITE', text: text || '' });
     } catch (e) { /* ignore */ }
 }
+async function clearClipboard() { await writeClipboard(''); }
 
 // ── Status prüfen (Bearer) ──────────────────────────────────────────────────
 async function checkStatus() {
@@ -293,6 +298,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
     if (msg.type === 'DO_UNLOCK') { doUnlock(msg.pin || '').then(sendResponse); return true; }
     if (msg.type === 'LOCK_NOW') { clearUnlocked().then(() => sendResponse({ ok: true })); return true; }
+    if (msg.type === 'CLIP_WRITE') { writeClipboard(msg.text || '').then(() => sendResponse({ ok: true })); return true; }
     if (msg.type === 'SCHEDULE_CLIP_CLEAR') { scheduleClipClear(msg.text || ''); sendResponse({ ok: true }); return true; }
     if (msg.type === 'CHECK_STATUS') { checkStatus().then(sendResponse); return true; }
     if (msg.type === 'CLEAR_CACHE') { cachedEntries = null; cacheTime = 0; faviconCache.clear(); sendResponse({ ok: true }); return true; }

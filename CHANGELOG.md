@@ -5,7 +5,18 @@ Die Erweiterungsversion (`manifest.json`) ist unabhängig von der OpenNIT-Server
 
 ## [Unreleased]
 
+### Hinzugefügt
+- **2FA-Code wird für den nächsten Schritt bereitgelegt:** Nach dem Ausfüllen eines Eintrags mit 2FA
+  landet beim nächsten 2FA-Feld automatisch ein **frischer** Code in der Zwischenablage – auch dann,
+  wenn die Abfrage erst auf einer Folgeseite kommt (z. B. Microsoft-Anmeldung). Einfügen genügt mit
+  Strg + V; der bisherige Inhalt der Zwischenablage wird dabei überschrieben und der Code nach 30
+  Sekunden wieder entfernt. Abschaltbar unter „Sicherheit → 2FA-Code beim Anmelden bereitlegen".
+
 ### Geändert
+- **Vorschläge weichen der Seite:** Sobald in ein Feld getippt wird, verschwindet die Vault-Liste –
+  darunter erscheint typischerweise die Suche der Seite selbst. Bei Feldern, die erkennbar eine eigene
+  Auswahlliste öffnen (etwa Benutzer-Auswahlfelder), erscheinen gar keine Vault-Vorschläge mehr.
+  Ausdrücklich als Anmeldefeld ausgezeichnete Felder sind davon ausgenommen.
 - **Anmeldung nur noch per SSO:** Das Feld für den manuell erzeugten API-Token samt „Verbindung testen"
   ist aus den Einstellungen entfernt. Die Verbindung entsteht ausschließlich über „Mit OpenNIT anmelden".
   Ein aus einer früheren Version übernommener Token wird beim Update aus dem lokalen Speicher gelöscht;

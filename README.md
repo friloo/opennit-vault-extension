@@ -23,6 +23,8 @@ deiner selbst gehosteten OpenNIT-Instanz und bietet:
 - ➕ **Neue Einträge anlegen** inkl. **Passwort-Generator**
 - 🔒 **PIN-Sperre** mit demselben PIN wie der Web-Tresor (Dauer frei wählbar, bis „bis Browser schließt")
 - 🧹 **Zwischenablage-Auto-Clear** nach dem Kopieren von Geheimnissen
+- 📋 **2FA-Code bereitgelegt:** nach dem Ausfüllen landet beim nächsten 2FA-Feld – auch auf einer
+  Folgeseite – automatisch ein frischer Code in der Zwischenablage (Strg + V genügt)
 - 🖼️ **Favicons** der hinterlegten Seiten (serverseitig gecacht – keine externen Aufrufe)
 - 🌙 **Heller & dunkler Modus** (folgt dem System)
 
@@ -82,6 +84,7 @@ Repository gedacht.
 | **Anmeldung**      | Ausschließlich per **SSO** („Mit OpenNIT anmelden"). |
 | **PIN-Sperre**     | Aus / 5 Min / 15 Min / 1 Std / bis der Browser geschlossen wird. Nutzt den **Tresor-PIN**. |
 | **Zwischenablage** | Nach 30 s automatisch leeren (Standard: an). |
+| **2FA bereitlegen** | Frischen 2FA-Code beim nächsten 2FA-Feld in die Zwischenablage legen (Standard: an). |
 
 ## Build / Paketierung
 

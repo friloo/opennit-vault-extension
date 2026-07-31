@@ -8,15 +8,17 @@ chrome.storage.local.get(['serverUrl'], cfg => {
 });
 
 // Sicherheits-Einstellungen laden
-chrome.storage.local.get(['lockDuration', 'clipClear'], cfg => {
-    $('lockDuration').value = (cfg.lockDuration && cfg.lockDuration !== 'off') ? cfg.lockDuration : '15';
-    $('clipClear').checked  = cfg.clipClear !== false; // Standard: an
+chrome.storage.local.get(['lockDuration', 'clipClear', 'totpAutoCopy'], cfg => {
+    $('lockDuration').value     = (cfg.lockDuration && cfg.lockDuration !== 'off') ? cfg.lockDuration : '15';
+    $('clipClear').checked      = cfg.clipClear !== false;    // Standard: an
+    $('totpAutoCopy').checked   = cfg.totpAutoCopy !== false; // Standard: an
 });
 
 $('btnSaveSec').addEventListener('click', () => {
     chrome.storage.local.set({
         lockDuration: $('lockDuration').value,
         clipClear:    $('clipClear').checked,
+        totpAutoCopy: $('totpAutoCopy').checked,
     }, () => {
         chrome.runtime.sendMessage({ type: 'LOCK_NOW' });
         $('savedSecMsg').innerHTML = '<span class="save-ok">&#10003; Gespeichert</span>';
