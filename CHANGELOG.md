@@ -33,6 +33,8 @@ Die Erweiterungsversion (`manifest.json`) ist unabhängig von der OpenNIT-Server
   Zwischenablage entfernt.
 
 ### Geändert
+- **Benutzername immer sichtbar:** Das Auge zum Ausblenden des Benutzernamens in der Detailansicht ist
+  entfallen – ein Benutzername ist kein Geheimnis. Das Passwort bleibt weiterhin maskiert.
 - **Vorschläge weichen der Seite:** Sobald in ein Feld getippt wird, verschwindet die Vault-Liste –
   darunter erscheint typischerweise die Suche der Seite selbst. Bei Feldern, die erkennbar eine eigene
   Auswahlliste öffnen (etwa Benutzer-Auswahlfelder), erscheinen gar keine Vault-Vorschläge mehr.
