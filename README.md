@@ -22,6 +22,7 @@ deiner selbst gehosteten OpenNIT-Instanz und bietet:
 - 👁️ **Detailansicht** mit Anzeigen/Kopieren von Zugangsdaten und 2FA-Code mit Countdown
 - ➕ **Neue Einträge anlegen** inkl. **Passwort-Generator**
 - 🔒 **PIN-Sperre** mit demselben PIN wie der Web-Tresor (Dauer frei wählbar, bis „bis Browser schließt")
+- ✏️ **Anlegen, Bearbeiten und Löschen** von Einträgen direkt im Popup
 - 🧹 **Zwischenablage-Auto-Clear** nach dem Kopieren von Geheimnissen
 - 📋 **2FA-Code bereitgelegt:** nach dem Ausfüllen landet beim nächsten 2FA-Feld – auch auf einer
   Folgeseite – automatisch ein frischer Code in der Zwischenablage (Strg + V genügt)

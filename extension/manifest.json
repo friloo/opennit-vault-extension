@@ -5,8 +5,6 @@
     "description": "OpenNIT Vault – Passwort-Manager mit Autofill für Benutzer-, Passwort- und 2FA-Felder direkt im Browser.",
     "permissions": [
         "storage",
-        "activeTab",
-        "scripting",
         "alarms",
         "offscreen",
         "identity"
@@ -31,6 +29,7 @@
                 "<all_urls>"
             ],
             "js": [
+                "urlmatch.js",
                 "content.js"
             ],
             "run_at": "document_idle"

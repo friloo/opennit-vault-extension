@@ -16,6 +16,7 @@ let currentField = null;
 let showGen = 0;
 let typedField = null;          // Feld, in das der Nutzer zuletzt selbst getippt hat
 let fillingInProgress = false;  // unterdrückt die Tipp-Erkennung beim Autofill
+let pendingFillInFlight = false; // der Auftrag wird beim Abholen verbraucht – nur einmal gleichzeitig
 
 // ── Heuristik-Muster ────────────────────────────────────────────────────────
 const RE_USER     = /(user(name|id)?|login|logon|sign[-_ ]?in|account|konto|benutzer|kennung|anmeld|e[-_ ]?mail|email|mail|uid|userid|handle|identifier|ident\b|loginid)/i;
@@ -206,26 +207,6 @@ function findOtpFields(ref) {
     return collectInputs(scopeOf(ref)).filter(el => isVisible(el) && isOtpField(el));
 }
 
-// ── URL-Matching ────────────────────────────────────────────────────────────
-function normalizeHost(raw) {
-    if (!raw) return '';
-    try {
-        const s = raw.includes('://') ? raw : 'https://' + raw;
-        return new URL(s).hostname.replace(/^www\./, '').toLowerCase();
-    } catch { return lc(raw).replace(/^www\./, ''); }
-}
-function matchUrl(entryUrls, pageUrl) {
-    const pageHost = normalizeHost(pageUrl);
-    if (!pageHost) return false;
-    const urls = typeof entryUrls === 'string' ? entryUrls.split('\n') : [entryUrls];
-    return urls.some(u => {
-        let eh = normalizeHost((u || '').trim());
-        if (!eh) return false;
-        if (eh.startsWith('*.')) eh = eh.slice(2);
-        return pageHost === eh || pageHost.endsWith('.' + eh);
-    });
-}
-
 // ── Events ──────────────────────────────────────────────────────────────────
 function init() {
     document.addEventListener('focusin', onFocusIn, true);
@@ -256,7 +237,7 @@ function fillFromPopup(msg) {
 
     if (userField && msg.username) setFieldValue(userField, msg.username);
     if (passField && msg.password) setFieldValue(passField, msg.password);
-    else if (msg.password) chrome.storage.local.set({ __pendingFill: { id: msg.id, pw: msg.password, user: msg.username || '', ts: Date.now() } });
+    else if (msg.password) chrome.runtime.sendMessage({ type: 'SET_PENDING_FILL', id: msg.id, pw: msg.password, user: msg.username || '' });
 
     if (msg.has_totp && msg.id != null) {
         armTotp(msg.id);
@@ -336,7 +317,7 @@ function showSuggestions(field) {
     const mode = fieldKind(field) === 'otp' ? 'otp' : 'login';
     chrome.runtime.sendMessage({ type: 'GET_MATCHING_ENTRIES', url: location.href }, resp => {
         if (gen !== showGen) return;
-        let entries = (resp && resp.entries || []).filter(e => matchUrl(e.url, location.href));
+        let entries = (resp && resp.entries || []).filter(e => VaultUrl.matches(e.url, location.href));
         if (mode === 'otp') entries = entries.filter(e => e.has_totp);
         if (!entries.length) { hideDrop(); return; }
         if (document.contains(field) && isVisible(field)) renderDrop(field, entries, mode);
@@ -489,7 +470,7 @@ async function fillEntry(entry, focused) {
 
     if (userField && entry.username) setFieldValue(userField, entry.username);
     if (passField) setFieldValue(passField, pw);
-    else chrome.storage.local.set({ __pendingFill: { id: entry.id, pw: pw, user: entry.username || '', ts: Date.now() } });
+    else chrome.runtime.sendMessage({ type: 'SET_PENDING_FILL', id: entry.id, pw: pw, user: entry.username || '' });
 
     if (entry.has_totp) {
         // Der 2FA-Schritt folgt oft erst nach dem Absenden – ggf. auf der nächsten
@@ -603,16 +584,17 @@ function scanForPendingWork() {
     if (otps.length) serveArmedTotp(otps, true);
 
     const pw = inputs.filter(isPasswordField);
-    if (!pw.length) return;
-    chrome.storage.local.get(['__pendingFill'], result => {
-        const p = result.__pendingFill;
-        if (!p || Date.now() - p.ts > 30000) return;
+    if (!pw.length || pendingFillInFlight) return;
+    pendingFillInFlight = true;
+    chrome.runtime.sendMessage({ type: 'TAKE_PENDING_FILL' }, resp => {
+        pendingFillInFlight = false;
+        const p = resp && resp.fill;
+        if (!p) return;
         pw.forEach(f => setFieldValue(f, p.pw));
         if (p.user) {
             const uf = findUsernameField(pw[0]);
             if (uf && !uf.value) setFieldValue(uf, p.user);
         }
-        chrome.storage.local.remove('__pendingFill');
     });
 }
 

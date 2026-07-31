@@ -16,7 +16,7 @@ Die Erweiterung ist ein **Manifest-V3-Client** ohne eigenen Server. Sie besteht 
 └───────────────┘               └──────────┬───────────┘
                                            │ CLIP_WRITE
                                   ┌────────▼─────────┐
-                                  │  offscreen.html  │  (Zwischenablage leeren)
+                                  │  offscreen.html  │  (Zwischenablage schreiben/leeren)
                                   └──────────────────┘
 ```
 
@@ -29,6 +29,7 @@ Die Erweiterung ist ein **Manifest-V3-Client** ohne eigenen Server. Sie besteht 
 | `popup.html` / `popup.js` | Toolbar-Popup: Liste, Suche, Detailansicht, Anlegen + Generator, PIN-Schirm. |
 | `options.html` / `options.js` | Einstellungen: Server-URL, SSO-Anmeldung, PIN-Sperrdauer, Zwischenablage. |
 | `offscreen.html` / `offscreen.js` | Minimaldokument, das ausschließlich die Zwischenablage beschreibt bzw. leert (MV3-konform). |
+| `urlmatch.js` | Gemeinsame Zuordnung Eintrag ↔ Seite (`VaultUrl`), geladen in allen drei Kontexten – damit Vorschlagsliste und Sicherheitswarnung dieselbe Regel anwenden. |
 
 ## Nachrichten (Auszug)
 
@@ -38,7 +39,8 @@ Die Erweiterung ist ein **Manifest-V3-Client** ohne eigenen Server. Sie besteht 
 | `GET_LOCK` / `DO_UNLOCK` / `LOCK_NOW` | popup → bg | PIN-Sperre abfragen/entsperren/sperren |
 | `GET_ENTRIES` / `GET_MATCHING_ENTRIES` | popup/content → bg | Einträge (alle / passend zur URL) |
 | `GET_PASSWORD` / `GET_TOTP` | popup/content → bg | Secret **on demand** |
-| `CREATE_ENTRY` | popup → bg | Neuen Eintrag anlegen |
+| `CREATE_ENTRY` / `UPDATE_ENTRY` / `DELETE_ENTRY` | popup → bg | Eintrag anlegen / ändern / löschen |
+| `SET_PENDING_FILL` / `TAKE_PENDING_FILL` | content → bg | Passwort für den zweiten Login-Schritt hinterlegen bzw. abholen (nur im Speicher, je Tab) |
 | `GET_FAVICON` | popup/content → bg | Favicon als Data-URL (serverseitig gecacht) |
 | `VAULT_FILL` | popup → content | Aktives Tab-Formular ausfüllen |
 | `SCHEDULE_CLIP_CLEAR` | popup/content → bg | Zwischenablage-Leerung planen |
@@ -53,6 +55,8 @@ Alle Endpunkte unter `/api/vault/extension/` mit `Authorization: Bearer <token>`
 - `GET  /entries/{id}/totp` – aktueller TOTP-Code + Restsekunden
 - `GET  /entries/{id}/favicon?fetch=1` – gecachtes Favicon (bei Bedarf serverseitig geholt)
 - `POST /entries` – neuen Eintrag anlegen
+- `POST /entries/{id}` – Eintrag ändern (leeres Passwortfeld = unverändert)
+- `POST /entries/{id}/delete` – Eintrag löschen
 - `GET  /status` – Token gültig? + `pin_enabled` / `pin_lock_secs`
 - `POST /unlock` – Tresor-PIN verifizieren + serverseitiges Entsperr-Fenster für den Token setzen
 - `POST /lock` – Token sofort wieder sperren (Entsperr-Fenster zurücksetzen)
@@ -76,5 +80,7 @@ Fensterdauer fest; „Bis der Browser geschlossen wird" nutzt ein langes Serverf
 
 - **Kein Remote-Code** – alle Skripte im Paket (MV3-CSP-konform, keine Inline-Skripte).
 - **Secrets on demand** – Passwörter/TOTP erst bei Nutzung, nie in der Liste.
-- **Kein persistentes Secret** – nur URL, Sitzungstoken, Einstellungen in `chrome.storage`.
+- **Kein persistentes Secret** – nur URL, Sitzungstoken, Einstellungen in `chrome.storage`. Das Passwort
+  für einen mehrstufigen Login liegt ausschließlich im Speicher des Service Workers (je Tab, 30 s),
+  nie in `chrome.storage`, das auf die Festplatte geschrieben würde.
 - **Server-seitige Krypto** – Ver-/Entschlüsselung im OpenNIT-Server, nicht im Browser.

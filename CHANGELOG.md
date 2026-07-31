@@ -6,11 +6,31 @@ Die Erweiterungsversion (`manifest.json`) ist unabhängig von der OpenNIT-Server
 ## [Unreleased]
 
 ### Hinzugefügt
+- **Einträge bearbeiten und löschen:** In der Detailansicht gibt es jetzt „Bearbeiten" und „Löschen".
+  Beim Bearbeiten bleibt das Passwortfeld leer – wer es leer lässt, behält das gespeicherte Passwort;
+  2FA-Secret und Ordner bleiben unangetastet. Für Team-Einträge greift das Schreibrecht des Teams.
+- **Passwort-Generator einstellbar:** Länge (12–48) und Sonderzeichen lassen sich beim Anlegen wählen –
+  hilfreich bei Seiten, die Sonderzeichen ablehnen.
 - **2FA-Code wird für den nächsten Schritt bereitgelegt:** Nach dem Ausfüllen eines Eintrags mit 2FA
   landet beim nächsten 2FA-Feld automatisch ein **frischer** Code in der Zwischenablage – auch dann,
   wenn die Abfrage erst auf einer Folgeseite kommt (z. B. Microsoft-Anmeldung). Einfügen genügt mit
   Strg + V; der bisherige Inhalt der Zwischenablage wird dabei überschrieben und der Code nach 30
   Sekunden wieder entfernt. Abschaltbar unter „Sicherheit → 2FA-Code beim Anmelden bereitlegen".
+
+### Sicherheit
+- **Passwort für mehrstufige Logins nicht mehr auf der Festplatte:** Verteilt eine Anmeldung Benutzername
+  und Passwort auf zwei Schritte, wurde das Passwort bisher im lokalen Speicher der Erweiterung abgelegt –
+  und blieb dort liegen, wenn der zweite Schritt nie erreicht wurde. Es wird jetzt nur noch im Arbeits-
+  speicher gehalten, an den jeweiligen Tab gebunden und nach 30 Sekunden bzw. beim Sperren verworfen.
+- **Warnung bei fremder Domain greift zuverlässiger:** Ein Eintrag für `vpn.firma.de` galt auf `firma.de`
+  fälschlich als passend, sodass die Warnung ausblieb. Zuordnung und Warnung nutzen jetzt dieselbe Regel:
+  nur die hinterlegte Adresse selbst und deren Unteradressen gelten als passend.
+- **Weniger Berechtigungen:** `scripting` und `activeTab` werden nicht mehr angefordert – beide wurden
+  nicht benötigt.
+- **Passwort-Generator:** Der Zufall für die Mischreihenfolge wird jetzt getrennt von der Zeichenauswahl
+  gezogen, und die Zeichenwahl ist gleichverteilt.
+- Notizen werden beim Kopieren wie andere Geheimnisse behandelt und nach 30 Sekunden aus der
+  Zwischenablage entfernt.
 
 ### Geändert
 - **Vorschläge weichen der Seite:** Sobald in ein Feld getippt wird, verschwindet die Vault-Liste –
