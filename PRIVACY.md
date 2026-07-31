@@ -17,7 +17,7 @@ technisches Client-Werkzeug ohne eigenen Server.
 | Datum | Zweck | Speicherort |
 |-------|-------|-------------|
 | **Server-URL** | Adresse deiner OpenNIT-Instanz | lokal (`chrome.storage.local`) |
-| **API-Token** | Authentifizierung gegenüber deiner Instanz | lokal (`chrome.storage.local`) |
+| **Sitzungstoken** | Authentifizierung gegenüber deiner Instanz (per SSO ausgestellt) | lokal (`chrome.storage.local`) |
 | **Einstellungen** (PIN-Sperrdauer, Zwischenablage-Option) | Verhalten der Erweiterung | lokal (`chrome.storage.local`) |
 | **Entsperr-Status** | Merkt, ob die PIN-Sperre entsperrt ist | Sitzungsspeicher (`chrome.storage.session`, wird beim Schließen des Browsers gelöscht) |
 | **Tresor-Einträge** (Titel, Benutzername, URL, Notizen, ob 2FA vorhanden) | Anzeige & Suche | flüchtig im Arbeitsspeicher (max. 5 Min zwischengespeichert) |
@@ -30,7 +30,7 @@ Die Erweiterung erstellt **keine** Nutzungsprofile und protokolliert **kein** Su
 
 - Es werden Daten **ausschließlich** an die von dir eingetragene **OpenNIT-Server-URL** übertragen
   (verschlüsselt via HTTPS, sofern deine Instanz HTTPS nutzt).
-- Übertragen werden: der API-Token (zur Authentifizierung), die aktuelle Seiten-Adresse (zum Finden
+- Übertragen werden: der Sitzungstoken (zur Authentifizierung), die aktuelle Seiten-Adresse (zum Finden
   passender Einträge), sowie beim Anlegen neuer Einträge die von dir eingegebenen Felder.
 - Es erfolgt **keine** Übermittlung an Anthropic, Google (außer der Chrome-Sync deines eigenen Browsers,
   falls du ihn aktiviert hast) oder sonstige Dritte.
@@ -42,7 +42,7 @@ Siehe [`docs/PERMISSIONS.md`](docs/PERMISSIONS.md). Kurz:
 - **Zugriff auf alle Websites** (`host_permissions: <all_urls>`): nötig, um Login-Felder auf beliebigen
   Seiten zu erkennen und auf Wunsch auszufüllen. Es werden **keine** Seiteninhalte gelesen oder
   übertragen, außer den zum Ausfüllen nötigen Formularfeldern – und diese verlassen den Browser nicht.
-- **storage**: lokale Speicherung von URL, Token und Einstellungen.
+- **storage**: lokale Speicherung von URL, Sitzungstoken und Einstellungen.
 - **scripting / activeTab**: Einfügen der Zugangsdaten in das aktive Tab-Formular.
 - **alarms / offscreen**: automatisches Leeren der Zwischenablage nach dem Kopieren.
 
@@ -53,7 +53,7 @@ Zwischenablage entfernt.
 
 ## 6. Speicherdauer
 
-- Server-URL, Token und Einstellungen bleiben lokal gespeichert, bis du sie änderst oder die Erweiterung
+- Server-URL, Sitzungstoken und Einstellungen bleiben lokal gespeichert, bis du sie änderst oder die Erweiterung
   entfernst.
 - Zwischengespeicherte Einträge werden spätestens nach 5 Minuten bzw. beim Sperren verworfen.
 - Passwörter/2FA-Codes werden nicht dauerhaft gespeichert.
@@ -62,7 +62,7 @@ Zwischenablage entfernt.
 
 Da die eigentliche Datenverarbeitung in deiner OpenNIT-Instanz stattfindet, richten sich Auskunfts-,
 Lösch- und Berichtigungsrechte an deren Betreiber. Lokale Daten der Erweiterung entfernst du durch
-Deinstallieren der Erweiterung oder Löschen des Tokens in den Einstellungen.
+Deinstallieren der Erweiterung oder „Abmelden" in den Einstellungen.
 
 ## 8. Kontakt
 
@@ -78,7 +78,7 @@ eine erreichbare Kontaktadresse ergänzen.
 
 **Controller.** The operator of the OpenNIT instance you connect to. The extension itself has no server.
 
-**Data processed.** Server URL, API token and settings (stored locally); unlock state (session storage,
+**Data processed.** Server URL, session tokens and settings (stored locally); unlock state (session storage,
 cleared when the browser closes); vault entry metadata (title, username, URL, notes, whether 2FA exists –
 cached in memory for up to 5 minutes); passwords/2FA codes (fetched **only** at the moment of use, never
 stored permanently); the active tab URL (to find matching entries).
@@ -96,4 +96,4 @@ browser. See [`docs/PERMISSIONS.md`](docs/PERMISSIONS.md).
 within 5 minutes; secrets are never stored persistently.
 
 **Your rights.** Because processing happens in your OpenNIT instance, direct data-subject requests to its
-operator. Remove local extension data by uninstalling the extension or clearing the token.
+operator. Remove local extension data by uninstalling the extension or signing out in the settings.

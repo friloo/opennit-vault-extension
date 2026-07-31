@@ -45,7 +45,7 @@ SICHERHEIT & DATENSCHUTZ
 • Passwörter werden erst im Moment der Nutzung abgerufen und nicht dauerhaft gespeichert
 
 EINRICHTUNG
-Server-URL eintragen, im OpenNIT-Tresor einen API-Token erzeugen und einfügen – fertig.
+Server-URL eintragen, auf „Mit OpenNIT anmelden" klicken und den Zugriff bestätigen – fertig.
 
 OpenNIT Vault benötigt eine laufende OpenNIT-Instanz.
 ```
@@ -71,7 +71,7 @@ SECURITY & PRIVACY
 • Passwords are fetched only at the moment of use and never stored permanently
 
 SETUP
-Enter your server URL, generate an API token in the OpenNIT vault, paste it — done.
+Enter your server URL, click "Sign in with OpenNIT" and approve access — done.
 
 OpenNIT Vault requires a running OpenNIT instance.
 ```
@@ -93,7 +93,7 @@ Deutsch (primär), Englisch
 
 ## Datenschutz-Angaben (Data usage im Dashboard)
 
-- Erhobene Datentypen: **Authentifizierungsinformationen** (API-Token), **Website-Inhalte** nur für
+- Erhobene Datentypen: **Authentifizierungsinformationen** (Sitzungstoken), **Website-Inhalte** nur für
   Autofill (verlassen den Browser nicht).
 - Nicht verkauft/weitergegeben. Nicht für Werbung/Bonität genutzt.
 - Verschlüsselte Übertragung (HTTPS).

@@ -5,7 +5,18 @@ Die Erweiterungsversion (`manifest.json`) ist unabhängig von der OpenNIT-Server
 
 ## [Unreleased]
 
+### Geändert
+- **Anmeldung nur noch per SSO:** Das Feld für den manuell erzeugten API-Token samt „Verbindung testen"
+  ist aus den Einstellungen entfernt. Die Verbindung entsteht ausschließlich über „Mit OpenNIT anmelden".
+  Ein aus einer früheren Version übernommener Token wird beim Update aus dem lokalen Speicher gelöscht;
+  wer bisher nur damit verbunden war, meldet sich einmal per SSO an.
+
 ### Behoben
+- **Restlaufzeit des 2FA-Codes wird wieder korrekt angezeigt:** Der Countdown blieb am Ende eines
+  Zeitfensters stehen und lief mit der Zeit aus dem Takt. Er rechnet nun gegen den tatsächlichen
+  Ablaufzeitpunkt und holt den neuen Code beim Wechsel genau einmal nach. Lässt sich kein neuer Code
+  laden (Tresor gesperrt oder Verbindung weg), zeigt die Anzeige das an, statt auf einem abgelaufenen
+  Wert stehen zu bleiben.
 - **Neuen Eintrag anlegen funktioniert wieder nach SSO-Anmeldung:** Das Speichern eines im Popup
   erzeugten Passworts brach bisher mit „Nicht konfiguriert." ab, wenn die Erweiterung über
   „Mit OpenNIT anmelden" verbunden war – es wurde ausschließlich der manuelle Token akzeptiert.

@@ -511,6 +511,8 @@ const _obs = new MutationObserver(() => {
 try { _obs.observe(document.documentElement, { childList: true, subtree: true }); } catch {}
 
 // ── TOTP-Benachrichtigung (unten rechts) ────────────────────────────────────
+const TOTP_PERIOD = 30; // Sekunden pro Code (RFC 6238, Serverseite nutzt denselben Wert)
+
 function showTotpNotification(code, remaining) {
     const ID = '__vault_totp_notif__';
     const old = document.getElementById(ID);
@@ -531,18 +533,20 @@ function showTotpNotification(code, remaining) {
         + '<span style="color:#adb5bd;font-size:10px;flex:1;">2FA-Code kopiert</span></div>'
         + '<div style="font-family:monospace;font-size:18px;font-weight:700;letter-spacing:.12em;">' + esc(formatted) + '</div>'
         + '<div style="display:flex;align-items:center;gap:7px;"><div style="flex:1;height:3px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden;">'
-        + '<div id="__vault_totp_bar" style="height:100%;background:#28a745;width:' + (remaining / 30 * 100) + '%;transition:width 1s linear;"></div></div>'
+        + '<div id="__vault_totp_bar" style="height:100%;background:#28a745;width:' + Math.min(100, remaining / TOTP_PERIOD * 100) + '%;transition:width 1s linear;"></div></div>'
         + '<span id="__vault_totp_t" style="font-size:10px;color:#adb5bd;min-width:22px;text-align:right;">' + remaining + 's</span></div>';
     document.documentElement.appendChild(notif);
 
-    let secs = remaining;
+    // Gegen einen festen Ablaufzeitpunkt rechnen, damit die Anzeige auch nach
+    // gedrosselten oder ausgefallenen Timer-Ticks stimmt.
+    const deadline = Date.now() + (Number(remaining) > 0 ? Number(remaining) : TOTP_PERIOD) * 1000;
     const iv = setInterval(() => {
-        secs--;
+        const secs = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
         const t = document.getElementById('__vault_totp_t');
         const bar = document.getElementById('__vault_totp_bar');
-        if (secs <= 0 || !t) { clearInterval(iv); notif.style.transition = 'opacity .4s'; notif.style.opacity = '0'; setTimeout(() => notif.remove(), 400); return; }
+        if (secs === 0 || !t) { clearInterval(iv); notif.style.transition = 'opacity .4s'; notif.style.opacity = '0'; setTimeout(() => notif.remove(), 400); return; }
         t.textContent = secs + 's';
-        if (bar) { bar.style.width = (secs / 30 * 100) + '%'; if (secs < 10) bar.style.background = '#dc3545'; }
+        if (bar) { bar.style.width = Math.min(100, secs / TOTP_PERIOD * 100) + '%'; if (secs <= 10) bar.style.background = '#dc3545'; }
     }, 1000);
     notif.addEventListener('click', () => { clearInterval(iv); notif.remove(); });
 }
