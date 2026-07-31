@@ -5,6 +5,8 @@ Die Erweiterungsversion (`manifest.json`) ist unabhängig von der OpenNIT-Server
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-07-31
+
 ### Hinzugefügt
 - **Einträge bearbeiten und löschen:** In der Detailansicht gibt es jetzt „Bearbeiten" und „Löschen".
   Beim Bearbeiten bleibt das Passwortfeld leer – wer es leer lässt, behält das gespeicherte Passwort;
