@@ -29,7 +29,6 @@ async function init() {
     // Detail-Panel
     $('btnDetailBack').addEventListener('click', closeDetail);
     $('btnDetailClose').addEventListener('click', closeDetail);
-    $('btnRevealUser').addEventListener('click', toggleRevealUser);
     $('btnCopyUser').addEventListener('click', () => copySecret($('detailUser').dataset.value || '', 'Benutzername kopiert'));
     $('btnRevealPass').addEventListener('click', toggleRevealPass);
     $('btnCopyPass').addEventListener('click', copyDetailPassword);
@@ -422,7 +421,7 @@ function openDetail(id) {
     const e = entryIndex[String(id)];
     if (!e) return;
     closeDetailTimers();
-    detailState = { id: String(id), password: null, revealUser: true, revealPass: false, totpInterval: null };
+    detailState = { id: String(id), password: null, revealPass: false, totpInterval: null };
 
     $('listWrap').style.display = 'none';
     $('search').closest('.search-wrap').style.display = 'none';
@@ -457,21 +456,18 @@ function openDetail(id) {
         urlLink.style.display = 'none';
     }
 
-    // Benutzername (standardmäßig sichtbar; Auge schaltet Maskierung)
+    // Benutzername – kein Geheimnis, daher immer im Klartext.
     const uval = e.username || '';
     const uEl  = $('detailUser');
     uEl.dataset.value = uval;
-    detailState.revealUser = true;
     if (uval) {
         uEl.classList.remove('empty');
         uEl.textContent = uval;
-        $('btnRevealUser').style.display = '';
-        $('btnCopyUser').style.display   = '';
+        $('btnCopyUser').style.display = '';
     } else {
         uEl.classList.add('empty');
         uEl.textContent = 'Kein Benutzername';
-        $('btnRevealUser').style.display = 'none';
-        $('btnCopyUser').style.display   = 'none';
+        $('btnCopyUser').style.display = 'none';
     }
 
     // Passwort (standardmäßig maskiert)
@@ -503,14 +499,6 @@ function closeDetail() {
     $('detailPanel').style.display = 'none';
     $('listWrap').style.display = '';
     $('search').closest('.search-wrap').style.display = '';
-}
-
-function toggleRevealUser() {
-    const uEl = $('detailUser');
-    const val = uEl.dataset.value || '';
-    if (!val) return;
-    detailState.revealUser = !detailState.revealUser;
-    uEl.textContent = detailState.revealUser ? val : '•'.repeat(Math.min(val.length, 14));
 }
 
 async function ensurePassword(id) {
