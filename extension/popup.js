@@ -261,45 +261,36 @@ function generatePassword() {
     $('nePassword').type = 'text';
 }
 
-async function saveNewEntry() {
+// Speichern läuft – wie alle anderen Aufrufe – über den Background-Service-Worker,
+// der den gültigen Zugang (SSO oder manueller Token) beisteuert.
+function saveNewEntry() {
     const title = $('neTitle').value.trim();
     if (!title) { $('newEntryMsg').textContent = 'Titel ist erforderlich.'; return; }
-
-    const cfg = await new Promise(r => chrome.storage.local.get(['serverUrl', 'apiToken'], r));
-    if (!cfg.serverUrl || !cfg.apiToken) { $('newEntryMsg').textContent = 'Nicht konfiguriert.'; return; }
 
     $('btnSaveNew').disabled = true;
     $('btnSaveNew').textContent = '...';
     $('newEntryMsg').textContent = '';
 
-    const fd = new FormData();
-    fd.append('title',    title);
-    fd.append('username', $('neUsername').value.trim());
-    fd.append('password', $('nePassword').value);
-    fd.append('url',      $('neUrl').value.trim());
-    fd.append('notes',    $('neNotes').value.trim());
+    const entry = {
+        title:    title,
+        username: $('neUsername').value.trim(),
+        password: $('nePassword').value,
+        url:      $('neUrl').value.trim(),
+        notes:    $('neNotes').value.trim(),
+    };
 
-    try {
-        const res  = await fetch(cfg.serverUrl + '/api/vault/extension/entries', {
-            method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + cfg.apiToken },
-            body: fd,
-        });
-        const data = await res.json();
-        if (data.ok) {
-            chrome.runtime.sendMessage({ type: 'CLEAR_CACHE' });
+    chrome.runtime.sendMessage({ type: 'CREATE_ENTRY', entry }, resp => {
+        $('btnSaveNew').disabled = false;
+        $('btnSaveNew').textContent = 'Speichern';
+        if (resp?.ok) {
             closeNewPanel();
             reload(true);
             showToast('Eintrag gespeichert');
-        } else {
-            $('newEntryMsg').textContent = data.error || 'Fehler beim Speichern.';
+            return;
         }
-    } catch (e) {
-        $('newEntryMsg').textContent = 'Verbindungsfehler: ' + e.message;
-    }
-
-    $('btnSaveNew').disabled = false;
-    $('btnSaveNew').textContent = 'Speichern';
+        if (resp?.locked) { showLockScreen(); return; }
+        $('newEntryMsg').textContent = resp?.error || 'Fehler beim Speichern.';
+    });
 }
 
 // ── Liste (Klick öffnet Detailansicht) ─────────────────────────────────────

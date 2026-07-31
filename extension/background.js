@@ -147,6 +147,37 @@ async function fetchEntries(force = false) {
     return { entries: null, locked: false };
 }
 
+/**
+ * Legt einen persönlichen Eintrag im Tresor an.
+ *
+ * Läuft bewusst über `apiFetch`, damit derselbe Zugang wie für alle übrigen
+ * Aufrufe gilt: SSO-Access-Token (inkl. automatischer Erneuerung) oder – falls
+ * gesetzt – der manuelle Token.
+ *
+ * @param {{title?:string,username?:string,password?:string,url?:string,notes?:string}} fields
+ * @return {Promise<{ok:boolean,id?:number,locked?:boolean,error?:string}>}
+ */
+async function createEntry(fields) {
+    if (!(await isUnlocked())) return { ok: false, locked: true, error: 'Tresor gesperrt.' };
+    const body = new URLSearchParams();
+    ['title', 'username', 'password', 'url', 'notes'].forEach(k => body.append(k, fields?.[k] ?? ''));
+    try {
+        const res = await apiFetch('/api/vault/extension/entries', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString(),
+        });
+        if (!res) return { ok: false, error: 'Nicht konfiguriert.' };
+        if (res.status === 423) { await onServerLocked(); return { ok: false, locked: true, error: 'Tresor gesperrt.' }; }
+        const data = await res.json().catch(() => ({}));
+        if (data.ok) {
+            cachedEntries = null; cacheTime = 0;
+            return { ok: true, id: data.id };
+        }
+        return { ok: false, error: data.error || 'Fehler beim Speichern.' };
+    } catch (e) { return { ok: false, error: 'Verbindungsfehler.' }; }
+}
+
 async function fetchPassword(entryId) {
     if (!(await isUnlocked())) return null;
     try {
@@ -252,6 +283,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         });
         return true;
     }
+    if (msg.type === 'CREATE_ENTRY') { createEntry(msg.entry || {}).then(sendResponse); return true; }
     if (msg.type === 'GET_PASSWORD') { fetchPassword(msg.id).then(password => sendResponse({ password })); return true; }
     if (msg.type === 'GET_TOTP') { fetchTotp(msg.id).then(result => sendResponse(result)); return true; }
     if (msg.type === 'GET_FAVICON') { fetchFavicon(msg.id).then(dataUrl => sendResponse({ dataUrl })); return true; }
