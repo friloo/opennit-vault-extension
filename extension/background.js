@@ -13,13 +13,13 @@ async function getServerUrl() {
     return c.serverUrl || null;
 }
 
-// ── Zugangstoken beschaffen (SSO-Refresh oder manueller Token) ──────────────
-// Reihenfolge: manueller Token (Erweitert) > SSO-Access-Token (mit Auto-Refresh).
+// ── Zugangstoken beschaffen (SSO) ──────────────────────────────────────────
+// Kurzlebiger Access-Token aus der Session; ist er abgelaufen, wird er über den
+// rotierenden Refresh-Token erneuert.
 async function getAccessToken() {
     const cfg = await new Promise(r => chrome.storage.local.get(
-        ['serverUrl', 'apiToken', 'apiRefreshToken', 'apiRefreshExpiresAt'], r));
+        ['serverUrl', 'apiRefreshToken', 'apiRefreshExpiresAt'], r));
     if (!cfg.serverUrl) return null;
-    if (cfg.apiToken) return cfg.apiToken;               // manueller Token
     if (!cfg.apiRefreshToken) return null;               // nicht angemeldet
     const sess = await chrome.storage.session.get(['accessToken', 'accessExpiresAt']);
     if (sess.accessToken && sess.accessExpiresAt && Date.now() < sess.accessExpiresAt - 30000) {
@@ -296,6 +296,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'SCHEDULE_CLIP_CLEAR') { scheduleClipClear(msg.text || ''); sendResponse({ ok: true }); return true; }
     if (msg.type === 'CHECK_STATUS') { checkStatus().then(sendResponse); return true; }
     if (msg.type === 'CLEAR_CACHE') { cachedEntries = null; cacheTime = 0; faviconCache.clear(); sendResponse({ ok: true }); return true; }
+});
+
+// Der manuell eingetragene API-Token wird nicht mehr unterstützt; ein aus einer
+// früheren Version übernommener Wert wird beim Update aus dem Speicher entfernt.
+chrome.runtime.onInstalled.addListener(() => {
+    chrome.storage.local.remove('apiToken');
 });
 
 // Cache alle 5 Minuten leeren; Zwischenablage-Clear nach Timeout.

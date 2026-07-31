@@ -37,19 +37,18 @@ Die Erweiterung ist ein reiner **Client** zu deiner OpenNIT-Instanz. Sie enthäl
 und **keinen** Remote-Code – alle Skripte sind im Paket enthalten. Kommuniziert wird ausschließlich mit dem
 von dir konfigurierten OpenNIT-Server über dessen REST-API (`/api/vault/extension/...`) per **Bearer-Token**.
 
-- Die Anmeldung erfolgt per **SSO** („Mit OpenNIT anmelden"). Die Erweiterung erhält dabei automatisch
-  ein kurzlebiges, rotierendes Zugriffstoken – ein manuelles Erzeugen von Tokens im Web-Tresor entfällt.
+- Die Anmeldung erfolgt ausschließlich per **SSO** („Mit OpenNIT anmelden"). Die Erweiterung erhält dabei
+  ein kurzlebiges, rotierendes Zugriffstoken – ein manuelles Erzeugen von Tokens entfällt.
 - Passwörter werden **serverseitig** ver-/entschlüsselt; die Erweiterung fordert das Klartext-Passwort
   eines Eintrags erst **im Moment des Ausfüllens/Kopierens** an – nicht beim Laden der Liste.
 - Es findet **keine** Ende-zu-Ende-Entschlüsselung im Browser statt; die Erweiterung speichert keine
-  Passwörter dauerhaft (nur Server-URL, Token und Einstellungen in `chrome.storage`).
+  Passwörter dauerhaft (nur Server-URL, Sitzungstoken und Einstellungen in `chrome.storage`).
 
 Details: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · Berechtigungen: [`docs/PERMISSIONS.md`](docs/PERMISSIONS.md)
 
-> **Anmeldung per SSO (Standard):** „Mit OpenNIT anmelden" (OAuth 2.0 + PKCE) – Anmeldung wie an OpenNIT
-> (lokal + 2FA / M365 / Keycloak), automatische Token-Erneuerung mit Rotation. Ein manuell erzeugter Token
-> ist nur noch als „Erweitert"-Fallback in den Erweiterungs-Einstellungen vorgesehen; OpenNIT bietet dafür
-> im Frontend keine Token-Erzeugung mehr an. Konzept/Details: [`docs/SSO-PLAN.md`](docs/SSO-PLAN.md).
+> **Anmeldung per SSO:** „Mit OpenNIT anmelden" (OAuth 2.0 + PKCE) – Anmeldung wie an OpenNIT
+> (lokal + 2FA / M365 / Keycloak), automatische Token-Erneuerung mit Rotation. Einen manuell eingetragenen
+> API-Token unterstützt die Erweiterung nicht mehr.
 
 ## Installation
 
@@ -80,7 +79,7 @@ Repository gedacht.
 | Einstellung        | Beschreibung |
 |--------------------|--------------|
 | **Server-URL**     | Adresse deiner OpenNIT-Instanz, ohne abschließenden Slash (`https://…`). |
-| **Anmeldung**      | Per **SSO** („Mit OpenNIT anmelden"). Ein manueller API-Token ist nur als „Erweitert"-Fallback vorgesehen. |
+| **Anmeldung**      | Ausschließlich per **SSO** („Mit OpenNIT anmelden"). |
 | **PIN-Sperre**     | Aus / 5 Min / 15 Min / 1 Std / bis der Browser geschlossen wird. Nutzt den **Tresor-PIN**. |
 | **Zwischenablage** | Nach 30 s automatisch leeren (Standard: an). |
 

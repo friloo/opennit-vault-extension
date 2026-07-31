@@ -262,7 +262,7 @@ function generatePassword() {
 }
 
 // Speichern läuft – wie alle anderen Aufrufe – über den Background-Service-Worker,
-// der den gültigen Zugang (SSO oder manueller Token) beisteuert.
+// der den gültigen Zugang beisteuert.
 function saveNewEntry() {
     const title = $('neTitle').value.trim();
     if (!title) { $('newEntryMsg').textContent = 'Titel ist erforderlich.'; return; }
@@ -475,6 +475,12 @@ async function copyDetailPassword() {
     else showToast('Kein Passwort');
 }
 
+const TOTP_PERIOD = 30; // Sekunden pro Code (RFC 6238, Serverseite nutzt denselben Wert)
+
+// Restlaufzeit des 2FA-Codes. Die Anzeige rechnet gegen einen festen Ablaufzeitpunkt
+// statt blind herunterzuzählen – so bleibt sie korrekt, wenn der Timer gedrosselt wird
+// oder ein Tick ausfällt. Nachgeladen wird erst, wenn der Code abgelaufen ist, und pro
+// Ablauf nur einmal.
 function loadDetailTotp(id) {
     const codeEl = $('detailTotp');
     const secsEl = $('detailTotpSecs');
@@ -483,33 +489,55 @@ function loadDetailTotp(id) {
     codeEl.dataset.code = '';
     secsEl.textContent = '';
 
-    chrome.runtime.sendMessage({ type: 'GET_TOTP', id }, resp => {
-        if (!detailState || detailState.id !== String(id)) return;
-        if (!resp?.code) { codeEl.textContent = '—'; return; }
+    let deadline  = 0;
+    let refetching = false;
 
-        const apply = (code, remaining) => {
-            codeEl.textContent = code.slice(0, 3) + ' ' + code.slice(3);
-            codeEl.dataset.code = code;
-            secsEl.textContent = remaining + 's';
-            if (barEl) barEl.style.width = Math.round(remaining / 30 * 100) + '%';
-        };
+    const stillOpen = () => detailState && detailState.id === String(id);
+
+    const render = () => {
+        const secs = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+        secsEl.textContent = secs + 's';
+        if (barEl) {
+            barEl.style.width = Math.min(100, Math.round(secs / TOTP_PERIOD * 100)) + '%';
+            barEl.style.background = secs <= 10 ? '#dc3545' : '#34d399';
+        }
+        return secs;
+    };
+
+    const apply = (code, remaining) => {
+        codeEl.textContent = code.slice(0, 3) + ' ' + code.slice(3);
+        codeEl.dataset.code = code;
+        // Der Server liefert die Restsekunden des laufenden Zeitfensters; daraus wird
+        // ein Ablaufzeitpunkt, gegen den die Anzeige lokal rechnet.
+        deadline = Date.now() + (Number(remaining) > 0 ? Number(remaining) : TOTP_PERIOD) * 1000;
+        render();
+    };
+
+    const refetch = () => {
+        if (refetching) return;
+        refetching = true;
+        chrome.runtime.sendMessage({ type: 'GET_TOTP', id }, r => {
+            refetching = false;
+            if (!stillOpen()) return;
+            if (r?.code) { apply(r.code, r.remaining); return; }
+            // Kein Code mehr (gesperrt oder Verbindung weg) – Anzeige zurücksetzen
+            // statt weiter auf einem abgelaufenen Wert stehen zu bleiben.
+            closeDetailTimers();
+            codeEl.textContent = '—';
+            codeEl.dataset.code = '';
+            secsEl.textContent = '';
+            if (barEl) barEl.style.width = '0%';
+        });
+    };
+
+    chrome.runtime.sendMessage({ type: 'GET_TOTP', id }, resp => {
+        if (!stillOpen()) return;
+        if (!resp?.code) { codeEl.textContent = '—'; return; }
         apply(resp.code, resp.remaining);
 
-        let secs = resp.remaining;
         detailState.totpInterval = setInterval(() => {
-            secs--;
-            if (secs <= 0) {
-                chrome.runtime.sendMessage({ type: 'GET_TOTP', id }, r2 => {
-                    if (!detailState || detailState.id !== String(id)) return;
-                    if (r2?.code) { secs = r2.remaining; apply(r2.code, r2.remaining); }
-                });
-                return;
-            }
-            secsEl.textContent = secs + 's';
-            if (barEl) {
-                barEl.style.width = Math.round(secs / 30 * 100) + '%';
-                barEl.style.background = secs < 10 ? '#dc3545' : '#34d399';
-            }
+            if (!stillOpen()) return;
+            if (render() === 0) refetch();
         }, 1000);
     });
 }

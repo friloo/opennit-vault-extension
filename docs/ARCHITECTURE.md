@@ -27,7 +27,7 @@ Die Erweiterung ist ein **Manifest-V3-Client** ohne eigenen Server. Sie besteht 
 | `background.js` | Zentrale Logik: API-Aufrufe, 5-Minuten-Cache, **Lock-Gate**, Favicon-Cache (Data-URLs), Zwischenablage-Timer. Alle Secrets fließen hier durch. |
 | `content.js` | Wird auf jeder Seite ausgeführt. Erkennt Benutzer-/Passwort-/OTP-Felder (inkl. Shadow-DOM, mehrstufige Logins, segmentierte OTP-Felder), zeigt das Vorschlags-Dropdown und füllt Felder framework-kompatibel (React/Vue/Angular). |
 | `popup.html` / `popup.js` | Toolbar-Popup: Liste, Suche, Detailansicht, Anlegen + Generator, PIN-Schirm. |
-| `options.html` / `options.js` | Einstellungen: Server-URL, Token, PIN-Sperrdauer, Zwischenablage. |
+| `options.html` / `options.js` | Einstellungen: Server-URL, SSO-Anmeldung, PIN-Sperrdauer, Zwischenablage. |
 | `offscreen.html` / `offscreen.js` | Minimaldokument, das ausschließlich die Zwischenablage leert (MV3-konform). |
 
 ## Nachrichten (Auszug)
@@ -38,6 +38,7 @@ Die Erweiterung ist ein **Manifest-V3-Client** ohne eigenen Server. Sie besteht 
 | `GET_LOCK` / `DO_UNLOCK` / `LOCK_NOW` | popup → bg | PIN-Sperre abfragen/entsperren/sperren |
 | `GET_ENTRIES` / `GET_MATCHING_ENTRIES` | popup/content → bg | Einträge (alle / passend zur URL) |
 | `GET_PASSWORD` / `GET_TOTP` | popup/content → bg | Secret **on demand** |
+| `CREATE_ENTRY` | popup → bg | Neuen Eintrag anlegen |
 | `GET_FAVICON` | popup/content → bg | Favicon als Data-URL (serverseitig gecacht) |
 | `VAULT_FILL` | popup → content | Aktives Tab-Formular ausfüllen |
 | `SCHEDULE_CLIP_CLEAR` | popup/content → bg | Zwischenablage-Leerung planen |
@@ -74,5 +75,5 @@ Fensterdauer fest; „Bis der Browser geschlossen wird" nutzt ein langes Serverf
 
 - **Kein Remote-Code** – alle Skripte im Paket (MV3-CSP-konform, keine Inline-Skripte).
 - **Secrets on demand** – Passwörter/TOTP erst bei Nutzung, nie in der Liste.
-- **Kein persistentes Secret** – nur URL, Token, Einstellungen in `chrome.storage`.
+- **Kein persistentes Secret** – nur URL, Sitzungstoken, Einstellungen in `chrome.storage`.
 - **Server-seitige Krypto** – Ver-/Entschlüsselung im OpenNIT-Server, nicht im Browser.
