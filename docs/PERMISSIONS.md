@@ -38,7 +38,8 @@ Einträge-Caches (5 Min).
 ## `offscreen`
 
 **Warum:** In Manifest V3 hat der Service Worker keinen DOM-Zugriff. Zum programmatischen Leeren der
-Zwischenablage wird ein kurzlebiges Offscreen-Dokument (Reason `CLIPBOARD`) genutzt.
+Zwischenablage wird ein kurzlebiges Offscreen-Dokument (Reason `CLIPBOARD`) genutzt – sowohl zum
+Bereitlegen eines 2FA-Codes als auch zum anschließenden Leeren.
 
 ## `identity`
 

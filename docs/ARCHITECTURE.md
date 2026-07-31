@@ -28,7 +28,7 @@ Die Erweiterung ist ein **Manifest-V3-Client** ohne eigenen Server. Sie besteht 
 | `content.js` | Wird auf jeder Seite ausgeführt. Erkennt Benutzer-/Passwort-/OTP-Felder (inkl. Shadow-DOM, mehrstufige Logins, segmentierte OTP-Felder), zeigt das Vorschlags-Dropdown und füllt Felder framework-kompatibel (React/Vue/Angular). |
 | `popup.html` / `popup.js` | Toolbar-Popup: Liste, Suche, Detailansicht, Anlegen + Generator, PIN-Schirm. |
 | `options.html` / `options.js` | Einstellungen: Server-URL, SSO-Anmeldung, PIN-Sperrdauer, Zwischenablage. |
-| `offscreen.html` / `offscreen.js` | Minimaldokument, das ausschließlich die Zwischenablage leert (MV3-konform). |
+| `offscreen.html` / `offscreen.js` | Minimaldokument, das ausschließlich die Zwischenablage beschreibt bzw. leert (MV3-konform). |
 
 ## Nachrichten (Auszug)
 
@@ -42,6 +42,7 @@ Die Erweiterung ist ein **Manifest-V3-Client** ohne eigenen Server. Sie besteht 
 | `GET_FAVICON` | popup/content → bg | Favicon als Data-URL (serverseitig gecacht) |
 | `VAULT_FILL` | popup → content | Aktives Tab-Formular ausfüllen |
 | `SCHEDULE_CLIP_CLEAR` | popup/content → bg | Zwischenablage-Leerung planen |
+| `CLIP_WRITE` | content → bg | In die Zwischenablage schreiben, wenn die Seite selbst keinen Zugriff bekommt |
 
 ## Server-API (in OpenNIT)
 

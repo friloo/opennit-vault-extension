@@ -14,6 +14,8 @@ const DROPDOWN_ID = '__vault_dropdown__';
 let appLabel = 'Vault';
 let currentField = null;
 let showGen = 0;
+let typedField = null;          // Feld, in das der Nutzer zuletzt selbst getippt hat
+let fillingInProgress = false;  // unterdrückt die Tipp-Erkennung beim Autofill
 
 // ── Heuristik-Muster ────────────────────────────────────────────────────────
 const RE_USER     = /(user(name|id)?|login|logon|sign[-_ ]?in|account|konto|benutzer|kennung|anmeld|e[-_ ]?mail|email|mail|uid|userid|handle|identifier|ident\b|loginid)/i;
@@ -28,7 +30,11 @@ function lc(s) { return String(s || '').toLowerCase(); }
 function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function vaultHue(s) { s = String(s || '?'); let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; }
 function vaultClipCopy(text) {
-    navigator.clipboard.writeText(text).catch(() => {});
+    // Ohne frische Nutzerinteraktion verweigert der Browser den direkten Zugriff;
+    // dann schreibt der Hintergrund über das Offscreen-Dokument.
+    navigator.clipboard.writeText(text).catch(() => {
+        try { chrome.runtime.sendMessage({ type: 'CLIP_WRITE', text: text }); } catch (e) { /* ignore */ }
+    });
     try { chrome.runtime.sendMessage({ type: 'SCHEDULE_CLIP_CLEAR', text: text }); } catch (e) { /* ignore */ }
 }
 function attr(el, n) { try { return el.getAttribute(n) || ''; } catch { return ''; } }
@@ -117,6 +123,28 @@ function isUsernameField(el) {
     return RE_USER.test(s) && !RE_USER_NEG.test(s);
 }
 
+// Felder, die eine eigene Vorschlagsliste unter sich aufklappen (ARIA-Combobox,
+// <input list>). Dort verdeckt unser Dropdown die Treffer der Seite.
+function hasOwnSuggestionList(el) {
+    if (!el) return false;
+    if (attr(el, 'list')) return true;                                  // datalist
+    const isCombo = lc(attr(el, 'role')) === 'combobox'
+        || !!(el.closest && el.closest('[role="combobox"]'));
+    if (!isCombo) return false;
+    const auto = lc(attr(el, 'aria-autocomplete'));
+    if (auto === 'list' || auto === 'both') return true;
+    // Verweist die Combobox auf ein eigenes Listenelement bzw. meldet ihren
+    // Auf-/Zuklapp-Zustand, hat sie eine eigene Trefferliste.
+    return !!(attr(el, 'aria-controls') || attr(el, 'aria-owns') || attr(el, 'aria-expanded'));
+}
+
+// Vom Seitenautor ausdrücklich als Login-Feld ausgezeichnet – wiegt schwerer als
+// die Combobox-Erkennung, damit echte Anmeldeformulare weiter Vorschläge bekommen.
+function isDeclaredLoginField(el) {
+    const a = ac(el);
+    return a.includes('username') || a.includes('password') || a.includes('one-time-code');
+}
+
 function isLoginField(el) { return isPasswordField(el) || isUsernameField(el) || isOtpField(el); }
 function fieldKind(el) {
     if (isPasswordField(el)) return 'password';
@@ -203,6 +231,7 @@ function init() {
     document.addEventListener('focusin', onFocusIn, true);
     document.addEventListener('focusout', onFocusOut, true);
     document.addEventListener('pointerdown', onPointerDown, true);
+    document.addEventListener('input', onInput, true);
     document.addEventListener('keydown', onKeyDown, true);
     document.addEventListener('click', onDocClick, true);
     window.addEventListener('scroll', repositionDrop, true);
@@ -230,24 +259,41 @@ function fillFromPopup(msg) {
     else if (msg.password) chrome.storage.local.set({ __pendingFill: { id: msg.id, pw: msg.password, user: msg.username || '', ts: Date.now() } });
 
     if (msg.has_totp && msg.id != null) {
-        const otps = findOtpFields(passField || userField || document.body);
-        chrome.runtime.sendMessage({ type: 'GET_TOTP', id: msg.id }, t => {
-            if (!t || !t.code) return;
-            if (otps.length) distributeOtp(otps, t.code);
-            vaultClipCopy(t.code);
-            showTotpNotification(t.code, t.remaining);
-        });
+        armTotp(msg.id);
+        deliverTotp(msg.id, findOtpFields(passField || userField || document.body));
     }
 }
 
-function onFocusIn(e) { maybeShow(e.target); }
+function onFocusIn(e) {
+    // Beim Betreten des 2FA-Feldes einen frischen Code bereitlegen.
+    if (isOtpField(e.target) && isVisible(e.target)) serveArmedTotp([e.target], false);
+    maybeShow(e.target);
+}
 function onPointerDown(e) {
     const drop = document.getElementById(DROPDOWN_ID);
     if (drop && drop.contains(e.target)) return;
     maybeShow(e.target);
 }
+
+// Sobald der Nutzer selbst tippt, gehört der Platz unter dem Feld der Seite –
+// dort erscheint typischerweise deren eigene Suche. Das Feld bleibt bis zum
+// Leeren gesperrt, damit ein erneuter Klick das Dropdown nicht zurückholt.
+function onInput(e) {
+    const el = e.target;
+    if (fillingInProgress || !el || !el.value) {
+        if (el && !el.value && typedField === el) typedField = null;
+        return;
+    }
+    typedField = el;
+    if (el === currentField) hideDrop();
+}
+function isTypingSuppressed(el) { return el === typedField && !!el.value; }
+
 function maybeShow(el) {
     if (!isLoginField(el) || !isVisible(el)) return;
+    // Eigene Vorschlagsliste der Seite hat Vorrang.
+    if (hasOwnSuggestionList(el) && !isDeclaredLoginField(el)) return;
+    if (isTypingSuppressed(el)) return;
     currentField = el;
     showSuggestions(el);
 }
@@ -446,14 +492,63 @@ async function fillEntry(entry, focused) {
     else chrome.storage.local.set({ __pendingFill: { id: entry.id, pw: pw, user: entry.username || '', ts: Date.now() } });
 
     if (entry.has_totp) {
-        const otps = findOtpFields(passField || userField || focused);
-        chrome.runtime.sendMessage({ type: 'GET_TOTP', id: entry.id }, t => {
-            if (!t || !t.code) return;
-            if (otps.length) distributeOtp(otps, t.code);
+        // Der 2FA-Schritt folgt oft erst nach dem Absenden – ggf. auf der nächsten
+        // Seite. Deshalb den Eintrag vormerken, damit dort ein frischer Code
+        // bereitgestellt werden kann.
+        armTotp(entry.id);
+        deliverTotp(entry.id, findOtpFields(passField || userField || focused));
+    }
+}
+
+// ── 2FA-Code für den nächsten Schritt bereitlegen ───────────────────────────
+// Nach dem Ausfüllen eines Eintrags mit 2FA bleibt der Eintrag kurz vorgemerkt.
+// Taucht danach ein 2FA-Feld auf – auf derselben oder einer Folgeseite –, landet
+// ein frischer Code in der Zwischenablage, sodass Strg+V genügt.
+const TOTP_ARM_TTL   = 5 * 60 * 1000; // Vormerkung nach dem Ausfüllen
+const TOTP_RECOPY_MS = 5000;          // Mindestabstand zwischen zwei Kopiervorgängen
+let lastTotpCopy = 0;
+let totpRequestPending = false;  // Fokus und Seiten-Scan können gleichzeitig auslösen
+const totpServedFields = new WeakSet();
+
+function armTotp(entryId) {
+    try { chrome.storage.local.set({ __armedTotp: { id: entryId, ts: Date.now() } }); } catch (e) { /* ignore */ }
+}
+
+function deliverTotp(entryId, fields, done) {
+    chrome.runtime.sendMessage({ type: 'GET_TOTP', id: entryId }, t => {
+        if (t && t.code) {
+            if (fields && fields.length) distributeOtp(fields, t.code);
+            lastTotpCopy = Date.now();
             vaultClipCopy(t.code);
             showTotpNotification(t.code, t.remaining);
-        });
-    }
+        }
+        if (done) done();
+    });
+}
+
+/**
+ * Automatischer Weg: nur kopieren und anzeigen. Ins Feld geschrieben wird ein Code
+ * ausschließlich, wenn der Nutzer den Eintrag selbst ausgewählt hat.
+ *
+ * @param {Element[]} fields  erkannte 2FA-Felder
+ * @param {boolean} oncePerField  true beim automatischen Auftauchen (je Feld einmal),
+ *                                false beim Fokussieren – dort darf nach Ablauf des
+ *                                Codes erneut ein frischer kopiert werden.
+ */
+function serveArmedTotp(fields, oncePerField) {
+    const relevant = oncePerField ? fields.filter(f => !totpServedFields.has(f)) : fields;
+    if (!relevant.length || totpRequestPending) return;
+    if (Date.now() - lastTotpCopy < TOTP_RECOPY_MS) return;
+    totpRequestPending = true;
+    chrome.storage.local.get(['__armedTotp', 'totpAutoCopy'], res => {
+        const armed = res.__armedTotp;
+        if (res.totpAutoCopy === false || !armed || Date.now() - armed.ts > TOTP_ARM_TTL) {
+            totpRequestPending = false;
+            return;
+        }
+        relevant.forEach(f => totpServedFields.add(f));
+        deliverTotp(armed.id, null, () => { totpRequestPending = false; });
+    });
 }
 
 function fillOtp(field, entry) {
@@ -479,6 +574,7 @@ function distributeOtp(fields, code) {
 }
 
 function setFieldValue(field, value) {
+    fillingInProgress = true;
     try {
         field.focus({ preventScroll: true });
         const proto = (typeof HTMLTextAreaElement !== 'undefined' && field instanceof HTMLTextAreaElement)
@@ -491,15 +587,26 @@ function setFieldValue(field, value) {
         field.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
         field.dispatchEvent(new Event('blur', { bubbles: true }));
     } catch {}
+    fillingInProgress = false;
 }
 
-// ── Mehrstufiger Login: Passwort/User nach dem Erscheinen befüllen ───────────
-const _obs = new MutationObserver(() => {
+// ── Mehrstufiger Login: Passwort/2FA nach dem Erscheinen bedienen ────────────
+// Der Scan ist entkoppelt vom Mutations-Takt: eine Seite kann pro Sekunde
+// hunderte Mutationen erzeugen, die Feldsuche läuft davon unabhängig gedrosselt.
+const SCAN_DEBOUNCE_MS = 250;
+let scanTimer = null;
+
+function scanForPendingWork() {
+    const inputs = collectInputs(document).filter(isVisible);
+
+    const otps = inputs.filter(isOtpField);
+    if (otps.length) serveArmedTotp(otps, true);
+
+    const pw = inputs.filter(isPasswordField);
+    if (!pw.length) return;
     chrome.storage.local.get(['__pendingFill'], result => {
         const p = result.__pendingFill;
         if (!p || Date.now() - p.ts > 30000) return;
-        const pw = collectInputs(document).filter(f => isVisible(f) && isPasswordField(f));
-        if (!pw.length) return;
         pw.forEach(f => setFieldValue(f, p.pw));
         if (p.user) {
             const uf = findUsernameField(pw[0]);
@@ -507,8 +614,15 @@ const _obs = new MutationObserver(() => {
         }
         chrome.storage.local.remove('__pendingFill');
     });
+}
+
+const _obs = new MutationObserver(() => {
+    if (scanTimer) return;
+    scanTimer = setTimeout(() => { scanTimer = null; scanForPendingWork(); }, SCAN_DEBOUNCE_MS);
 });
 try { _obs.observe(document.documentElement, { childList: true, subtree: true }); } catch {}
+// Bei einem Seitenwechsel steht das 2FA-Feld oft schon im ersten Rendering.
+scanForPendingWork();
 
 // ── TOTP-Benachrichtigung (unten rechts) ────────────────────────────────────
 const TOTP_PERIOD = 30; // Sekunden pro Code (RFC 6238, Serverseite nutzt denselben Wert)
