@@ -5,6 +5,7 @@ let pageMatches = [];
 let entryIndex  = {};      // id -> entry
 let detailState = null;    // aktiver Eintrag im Detail-Panel
 let selIndex    = -1;      // Tastatur-Auswahl in der Liste
+let editingId   = null;    // gesetzt, solange das Panel einen bestehenden Eintrag bearbeitet
 
 function $(id) { return document.getElementById(id); }
 
@@ -33,8 +34,10 @@ async function init() {
     $('btnRevealPass').addEventListener('click', toggleRevealPass);
     $('btnCopyPass').addEventListener('click', copyDetailPassword);
     $('btnCopyTotp').addEventListener('click', () => { const c = $('detailTotp').dataset.code || ''; if (c) copySecret(c, 'TOTP kopiert'); });
-    $('btnCopyNotes').addEventListener('click', () => copyToClipboard($('detailNotes').dataset.value || '', 'Notiz kopiert'));
+    $('btnCopyNotes').addEventListener('click', () => copySecret($('detailNotes').dataset.value || '', 'Notiz kopiert'));
     $('btnDetailFill').addEventListener('click', fillActiveTab);
+    $('btnDetailEdit').addEventListener('click', openEditPanel);
+    $('btnDetailDelete').addEventListener('click', deleteCurrentEntry);
 
     // Lock-Screen
     $('lockSubmit').addEventListener('click', submitPin);
@@ -211,6 +214,9 @@ function setSel(items, idx) {
 
 // ── New Entry ─────────────────────────────────────────────────────────────
 function openNewPanel() {
+    editingId = null;
+    $('panelTitle').textContent = 'Neuen Eintrag anlegen';
+    $('nePassword').placeholder = 'Passwort';
     $('listWrap').style.display = 'none';
     $('search').closest('.search-wrap').style.display = 'none';
     $('detailPanel').style.display = 'none';
@@ -232,33 +238,90 @@ function openNewPanel() {
 }
 
 function closeNewPanel() {
+    editingId = null;
     $('newEntryPanel').style.display = 'none';
     $('listWrap').style.display = '';
     $('search').closest('.search-wrap').style.display = '';
 }
 
+// Gleichverteilte Zufallszahl aus [0, max) – verwirft die Werte des obersten,
+// unvollständigen Blocks, damit kein Rest-Modulo einzelne Zeichen bevorzugt.
+function randomBelow(max) {
+    const limit = Math.floor(0x100000000 / max) * max;
+    const buf = new Uint32Array(1);
+    do { crypto.getRandomValues(buf); } while (buf[0] >= limit);
+    return buf[0] % max;
+}
+
+/** Zeichensätze ohne optisch verwechselbare Zeichen (l/I/1, O/0). */
+const GEN_SETS = [
+    'abcdefghijkmnopqrstuvwxyz',
+    'ABCDEFGHJKLMNPQRSTUVWXYZ',
+    '23456789',
+];
+const GEN_SYMBOLS = '!@#$%^&*()-_=+[]{}';
+
 function generatePassword() {
-    const len = 20;
-    const sets = [
-        'abcdefghijkmnopqrstuvwxyz',
-        'ABCDEFGHJKLMNPQRSTUVWXYZ',
-        '23456789',
-        '!@#$%^&*()-_=+[]{}',
-    ];
-    const all = sets.join('');
-    const buf = new Uint32Array(len);
-    crypto.getRandomValues(buf);
-    let out = [];
-    // Mindestens ein Zeichen je Set
-    sets.forEach((s, i) => { out.push(s[buf[i] % s.length]); });
-    for (let i = sets.length; i < len; i++) out.push(all[buf[i] % all.length]);
-    // mischen
+    const len  = Math.max(8, parseInt($('genLen').value, 10) || 20);
+    const sets = $('genSymbols').checked ? GEN_SETS.concat(GEN_SYMBOLS) : GEN_SETS.slice();
+    const all  = sets.join('');
+
+    // Je Satz ein Zeichen garantieren, den Rest frei ziehen …
+    const out = sets.map(s => s[randomBelow(s.length)]);
+    while (out.length < len) out.push(all[randomBelow(all.length)]);
+
+    // … und danach mischen, damit die garantierten Zeichen nicht vorne stehen.
+    // Der Zufall dafür wird frisch gezogen und nicht aus der Zeichenwahl wiederverwendet.
     for (let i = out.length - 1; i > 0; i--) {
-        const j = buf[i] % (i + 1);
+        const j = randomBelow(i + 1);
         [out[i], out[j]] = [out[j], out[i]];
     }
+
     $('nePassword').value = out.join('');
     $('nePassword').type = 'text';
+}
+
+// Bestehenden Eintrag im selben Panel bearbeiten. Das Passwortfeld bleibt leer –
+// leer bedeutet serverseitig „unverändert", sodass das Passwort das Popup nie verlässt.
+function openEditPanel() {
+    if (!detailState) return;
+    const e = entryIndex[detailState.id];
+    if (!e) return;
+
+    editingId = detailState.id;
+    closeDetail();
+
+    $('panelTitle').textContent = 'Eintrag bearbeiten';
+    $('neTitle').value    = e.title || '';
+    $('neUsername').value = e.username || '';
+    $('nePassword').value = '';
+    $('nePassword').type  = 'password';
+    $('nePassword').placeholder = 'Passwort (leer = unverändert)';
+    $('neUrl').value      = e.url || '';
+    $('neNotes').value    = e.notes || '';
+    $('newEntryMsg').textContent = '';
+
+    $('listWrap').style.display = 'none';
+    $('search').closest('.search-wrap').style.display = 'none';
+    $('detailPanel').style.display = 'none';
+    $('newEntryPanel').style.display = 'block';
+    $('neTitle').focus();
+}
+
+function deleteCurrentEntry() {
+    if (!detailState) return;
+    const e = entryIndex[detailState.id];
+    if (!e) return;
+    if (!window.confirm('Eintrag „' + (e.title || '') + '" wirklich löschen?')) return;
+
+    const btn = $('btnDetailDelete');
+    btn.disabled = true;
+    chrome.runtime.sendMessage({ type: 'DELETE_ENTRY', id: detailState.id }, resp => {
+        btn.disabled = false;
+        if (resp?.ok) { closeDetail(); reload(true); showToast('Eintrag gelöscht'); return; }
+        if (resp?.locked) { showLockScreen(); return; }
+        showToast(resp?.error || 'Löschen fehlgeschlagen');
+    });
 }
 
 // Speichern läuft – wie alle anderen Aufrufe – über den Background-Service-Worker,
@@ -278,14 +341,18 @@ function saveNewEntry() {
         url:      $('neUrl').value.trim(),
         notes:    $('neNotes').value.trim(),
     };
+    const msg = editingId
+        ? { type: 'UPDATE_ENTRY', id: editingId, entry }
+        : { type: 'CREATE_ENTRY', entry };
+    const wasEditing = !!editingId;
 
-    chrome.runtime.sendMessage({ type: 'CREATE_ENTRY', entry }, resp => {
+    chrome.runtime.sendMessage(msg, resp => {
         $('btnSaveNew').disabled = false;
         $('btnSaveNew').textContent = 'Speichern';
         if (resp?.ok) {
             closeNewPanel();
             reload(true);
-            showToast('Eintrag gespeichert');
+            showToast(wasEditing ? 'Eintrag aktualisiert' : 'Eintrag gespeichert');
             return;
         }
         if (resp?.locked) { showLockScreen(); return; }
@@ -579,30 +646,12 @@ async function fillActiveTab() {
 }
 
 // ── Helfer ────────────────────────────────────────────────────────────────
-function hostOf(u) {
-    try {
-        const s = String(u || '');
-        return new URL(s.includes('://') ? s : 'https://' + s).hostname.replace(/^www\./, '').toLowerCase();
-    } catch { return ''; }
-}
+function hostOf(u) { return VaultUrl.host(u); }
 // True, wenn eine der (mehrzeiligen) Eintrags-URLs zur Seiten-Domain passt –
 // oder wenn im Eintrag gar keine URL hinterlegt ist (dann keine Warnung).
-function fillDomainMatches(entryUrls, pageUrl) {
-    const pageHost = hostOf(pageUrl);
-    const list = String(entryUrls || '').split('\n').map(s => s.trim()).filter(Boolean);
-    if (!list.length) return true;
-    if (!pageHost) return false;
-    return list.some(u => {
-        let eh = hostOf(u);
-        if (eh.startsWith('*.')) eh = eh.slice(2);
-        return eh && (pageHost === eh || pageHost.endsWith('.' + eh) || eh.endsWith('.' + pageHost));
-    });
-}
-function copyToClipboard(text, msg) {
-    navigator.clipboard.writeText(text).then(() => showToast(msg)).catch(() => showToast('Fehler'));
-}
-// Wie copyToClipboard, plant aber zusätzlich das automatische Leeren der
-// Zwischenablage (für Zugangsdaten/2FA).
+function fillDomainMatches(entryUrls, pageUrl) { return VaultUrl.matchesOrUnset(entryUrls, pageUrl); }
+// Alles, was aus einem Eintrag kommt, gilt als Geheimnis – Notizen enthalten in
+// der Praxis ebenso oft Wiederherstellungscodes wie das Passwortfeld selbst.
 function copySecret(text, msg) {
     navigator.clipboard.writeText(text).then(() => {
         showToast(msg);
@@ -616,6 +665,6 @@ function showToast(msg) {
     setTimeout(() => t.classList.remove('show'), 1800);
 }
 function esc(s)     { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function escAttr(s) { return String(s||'').replace(/"/g,'&quot;'); }
+function escAttr(s) { return esc(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
 
 init();

@@ -16,15 +16,6 @@ Browser nicht. Es findet kein Tracking und keine Analyse statt.
 **Warum:** Das In-Seite-Dropdown mit Vorschlägen und die Felderkennung laufen als Content-Script.
 Notwendig für Autofill und die 2FA-Erkennung (inkl. Shadow-DOM und mehrstufiger Logins).
 
-## `scripting`
-
-**Warum:** Werte werden über den nativen Value-Setter gesetzt und Events ausgelöst, damit auch
-React/Vue/Angular-Formulare die Eingaben übernehmen.
-
-## `activeTab`
-
-**Warum:** Zugriff auf den aktiven Tab beim Ausfüllen aus dem Popup („Auf dieser Seite ausfüllen").
-
 ## `storage`
 
 **Warum:** Lokale Speicherung von Server-URL, Zugriffstoken (per SSO) und Einstellungen; Entsperr-Status in
@@ -48,6 +39,10 @@ OpenNIT-Login-Seite und empfängt die Weiterleitung an `https://<extension-id>.c
 **kein** Zugriff auf Google-Konten o. Ä. genommen – nur der Web-Auth-Flow zur konfigurierten OpenNIT-Instanz.
 
 ## Bewusst NICHT angefordert
+
+- **`scripting` / `activeTab`** – nicht nötig: Das Content-Script wird über `content_scripts` geladen,
+  das Ausfüllen aus dem Popup läuft über eine Nachricht an das bereits laufende Script. Der Zugriff auf
+  den aktiven Tab ist bereits durch `host_permissions` abgedeckt.
 
 - **`tabs`** – entfällt: Die aktive Tab-Adresse ist bereits über `host_permissions` verfügbar. Dadurch
   erscheint **keine** „Browserverlauf lesen"-Warnung.
