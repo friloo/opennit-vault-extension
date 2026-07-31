@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "OpenNIT Vault",
-    "version": "2.4.1",
+    "version": "2.5.0",
     "description": "OpenNIT Vault – Passwort-Manager mit Autofill für Benutzer-, Passwort- und 2FA-Felder direkt im Browser.",
     "permissions": [
         "storage",
