@@ -3,6 +3,15 @@
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 Die Erweiterungsversion (`manifest.json`) ist unabhängig von der OpenNIT-Serverversion.
 
+## [Unreleased]
+
+### Behoben
+- **Neuen Eintrag anlegen funktioniert wieder nach SSO-Anmeldung:** Das Speichern eines im Popup
+  erzeugten Passworts brach bisher mit „Nicht konfiguriert." ab, wenn die Erweiterung über
+  „Mit OpenNIT anmelden" verbunden war – es wurde ausschließlich der manuelle Token akzeptiert.
+  Das Anlegen nutzt nun denselben Zugang wie alle übrigen Aufrufe (inkl. automatischer
+  Token-Erneuerung). Ist der Tresor gesperrt, erscheint die PIN-Abfrage statt einer Fehlermeldung.
+
 ## [2.4.0] - 2026-07-01
 
 ### Hinzugefügt

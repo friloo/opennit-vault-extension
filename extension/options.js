@@ -25,25 +25,6 @@ $('btnSaveSec').addEventListener('click', () => {
     });
 });
 
-// App-Name und Verbindungsstatus laden (falls Token bereits gesetzt)
-chrome.storage.local.get(['serverUrl', 'apiToken'], async cfg => {
-    if (!cfg.serverUrl || !cfg.apiToken) return;
-    try {
-        const res  = await fetch(`${cfg.serverUrl}/api/vault/extension/status`, {
-            headers: { 'Authorization': `Bearer ${cfg.apiToken}` }
-        });
-        const data = await res.json();
-        if (data.ok) {
-            // Name der Erweiterung bleibt fest „OpenNIT Vault"; die Instanz wird
-            // beim angemeldeten Nutzer zur Orientierung angezeigt.
-            if (data.user) {
-                $('headerUser').textContent = data.app_name ? (data.user + ' · ' + data.app_name) : data.user;
-                $('headerStatus').style.display = '';
-            }
-        }
-    } catch { /* ignore */ }
-});
-
 // HTTPS erzwingen (außer localhost) – sonst gingen Token und Passwörter im
 // Klartext über die Leitung.
 function isSecureServerUrl(url) {
