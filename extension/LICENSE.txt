@@ -1,0 +1,17 @@
+OpenNIT Vault – Browser-Erweiterung
+Copyright (C) 2025  Friederich Loheide
+
+Dieses Programm ist freie Software: Sie koennen es unter den Bedingungen
+der GNU Affero General Public License, Version 3, weitergeben und/oder
+veraendern.
+
+Die Veroeffentlichung erfolgt in der Hoffnung, dass es nuetzlich ist,
+jedoch OHNE JEDE GEWAEHRLEISTUNG - sogar ohne die implizite Gewaehr-
+leistung der Marktreife oder der Eignung fuer einen bestimmten Zweck.
+Einzelheiten regelt die GNU Affero General Public License.
+
+Lizenztext:  https://www.gnu.org/licenses/agpl-3.0.html
+Quelltext:   https://opennit.de
+
+Der vollstaendige Lizenztext liegt der OpenNIT-Installation als Datei
+LICENSE bei und kann ueber die oben genannte Adresse bezogen werden.
